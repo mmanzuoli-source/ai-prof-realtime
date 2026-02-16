@@ -1,10 +1,10 @@
 import os
 import json
 import httpx
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import StreamingResponse
+from fastapi.responses import StreamingResponse, RedirectResponse
 from pydantic import BaseModel
 from dotenv import load_dotenv
 
@@ -15,15 +15,21 @@ ELEVEN_API_KEY = os.getenv("ELEVENLABS_API_KEY")
 
 # ID di una voce ElevenLabs (puoi cambiarla dalla dashboard Eleven)
 VOICE_ID = os.getenv("ELEVENLABS_VOICE_ID", "nPczCjzI2devNBz1zQrb")  # Brian - Deep, Resonant
-VOICE_ID = os.getenv("ELEVENLABS_VOICE_ID", "nPczCjzI2devNBz1zQrb")  # Brian
 print(f"🎤 DEBUG: VOICE_ID configurato = {VOICE_ID}")
-
 
 app = FastAPI()
 
+# ====== CORS ======
+origins = [
+    "https://www.aiprofrealtime.com",
+    "https://aiprofrealtime.com",  # anche senza www se lo usi
+    "http://localhost:5501",      # sviluppo locale static server
+    "http://localhost:3000",      # eventuale frontend locale
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],          # in sviluppo va bene così
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -31,16 +37,11 @@ app.add_middleware(
 
 # ====== STATICI FRONTEND ======
 BASE_DIR = os.path.dirname(__file__)
-# Ora il frontend è dentro backend/frontend
 FRONTEND_DIR = os.path.join(BASE_DIR, "frontend")
 
-# Monta index.html, main.js, avatar.js, models/avatar.glb su /app (solo se esiste)
 if os.path.exists(FRONTEND_DIR):
     app.mount("/app", StaticFiles(directory=FRONTEND_DIR, html=True), name="frontend")
     print(f"✅ Frontend montato da: {FRONTEND_DIR}")
-
-    # Redirect root alla app
-    from fastapi.responses import RedirectResponse
 
     @app.get("/")
     async def root():
@@ -75,8 +76,8 @@ Linee guida generali:
 - Chiedi sempre prima che materia/argomento sta studiando (es. frazioni, analisi logica, storia, geografia).
 - Fai domande guidate a piccoli passi (stile dialogo socratico), massimo 2 frasi per volta.
 - Usa un linguaggio semplice, esempi concreti (scuola, sport, videogiochi) e frasi brevi.
-- Quando sbaglia, NON dire “sbagliato”: spiega cosa non torna e proponi un esempio analogo un po’ più facile.
-- Non dare il risultato finale a meno che il ragazzo scriva chiaramente “dimmi la soluzione” o “mostrami il risultato”.
+- Quando sbaglia, NON dire "sbagliato": spiega cosa non torna e proponi un esempio analogo un po' più facile.
+- Non dare il risultato finale a meno che il ragazzo scriva chiaramente "dimmi la soluzione" o "mostrami il risultato".
 - Alla fine di ogni spiegazione proponi 1 esercizio simile da provare da solo.
 - Adatta la difficoltà al livello stimato: se il ragazzo è in difficoltà, semplifica e fai più esempi.
 - Tieni un tono incoraggiante, mai giudicante.
@@ -136,7 +137,7 @@ async def call_perplexity(message: str, points: int, level: int) -> TutorRespons
             print("DEBUG RAW TEXT:", resp.text[:1000])
             resp.raise_for_status()
             data = resp.json()
-            print("DEBUG PARSED:", data)
+            print("DEBUG PARSED:", json.dumps(data)[:1000])
     except Exception as e:
         print("ERRORE CHIAMATA PERPLEXITY:", repr(e))
         return TutorResponse(
@@ -174,10 +175,12 @@ async def tutor_endpoint(req: TutorRequest):
 
 
 # ====== ElevenLabs TTS ======
+@app.get("/tts")
 @app.post("/tts")
-async def tts(text: str):
+async def tts(text: str = Query(..., min_length=1)):
     """
     Converte il testo in audio usando ElevenLabs e restituisce un MP3.
+    Accetta sia GET (/tts?text=...) che POST.
     """
     if not ELEVEN_API_KEY:
         return {"error": "ELEVENLABS_API_KEY non configurata"}
