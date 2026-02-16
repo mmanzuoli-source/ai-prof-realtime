@@ -7,7 +7,7 @@ let avatarInitialized = false;
 const BASE_URL =
   window.location.hostname === "localhost"
     ? "http://localhost:8000"
-    : "https://ai-prof-realtime-production.up.railway.app";
+    : "https://www.aiprofrealtime.com";
 
 window.addEventListener("load", () => {
   initChat();
@@ -811,7 +811,7 @@ function initChat() {
     console.log("Streak aggiornata:", newStreak);
 
     try {
-      const res = await fetch("/tutor", {
+      const res = await fetch(`${BASE_URL}/tutor`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ message: textForModel, points, level }),
