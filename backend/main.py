@@ -1,31 +1,42 @@
 import os
 import json
+import sqlite3
+from datetime import datetime
+
 import httpx
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Query
+from dotenv import load_dotenv
+from fastapi import (
+    FastAPI,
+    WebSocket,
+    WebSocketDisconnect,
+    Query,
+    HTTPException,
+    Depends,
+    Header,
+)
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import StreamingResponse, RedirectResponse
 from pydantic import BaseModel
-from dotenv import load_dotenv
+from passlib.context import CryptContext
+from openai import OpenAI
 
 load_dotenv()
 
 PERPLEXITY_API_KEY = os.getenv("PERPLEXITY_API_KEY")
-ELEVEN_API_KEY = os.getenv("ELEVENLABS_API_KEY")
-print("DEBUG ELEVEN_API_KEY prefix:", (ELEVEN_API_KEY or "")[:8])
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+ADMIN_SECRET = os.getenv("ADMIN_SECRET", "changeme-admin-secret")
 
-# ID di una voce ElevenLabs (puoi cambiarla dalla dashboard Eleven)
-VOICE_ID = os.getenv("ELEVENLABS_VOICE_ID", "nPczCjzI2devNBz1zQrb")  # Brian - Deep, Resonant
-print(f"🎤 DEBUG: VOICE_ID configurato = {VOICE_ID}")
+print("DEBUG OPENAI_API_KEY prefix:", (OPENAI_API_KEY or "")[:8])
 
 app = FastAPI()
 
 # ====== CORS ======
 origins = [
     "https://www.aiprofrealtime.com",
-    "https://aiprofrealtime.com",  # anche senza www se lo usi
-    "http://localhost:5501",      # sviluppo locale static server
-    "http://localhost:3000",      # eventuale frontend locale
+    "https://aiprofrealtime.com",
+    "http://localhost:5501",
+    "http://localhost:3000",
 ]
 
 app.add_middleware(
@@ -56,6 +67,206 @@ else:
             "message": "AI Prof Realtime API - Backend only. Vai a /docs per la documentazione."
         }
 
+# =====================================================
+#                     UTENTI / ADMIN
+# =====================================================
+
+DB_PATH = os.path.join(BASE_DIR, "users.db")
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+
+def get_db():
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    return conn
+
+
+def init_db():
+    conn = get_db()
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS users (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            email TEXT NOT NULL UNIQUE,
+            password_hash TEXT NOT NULL,
+            is_admin INTEGER NOT NULL DEFAULT 0,
+            created_at TEXT NOT NULL,
+            last_login TEXT
+        )
+        """
+    )
+    conn.commit()
+    conn.close()
+
+
+init_db()
+
+
+def hash_password(password: str) -> str:
+    return pwd_context.hash(password)
+
+
+def verify_password(password: str, password_hash: str) -> bool:
+    return pwd_context.verify(password, password_hash)
+
+
+class RegisterRequest(BaseModel):
+    name: str
+    email: str
+    password: str
+
+
+class LoginRequest(BaseModel):
+    email: str
+    password: str
+
+
+class UserPublic(BaseModel):
+    id: int
+    name: str
+    email: str
+    is_admin: bool
+    created_at: str
+    last_login: str | None = None
+
+
+@app.post("/api/register", response_model=UserPublic)
+async def register_user(req: RegisterRequest):
+    conn = get_db()
+    cur = conn.cursor()
+    try:
+        cur.execute(
+            """
+            INSERT INTO users (name, email, password_hash, created_at)
+            VALUES (?, ?, ?, ?)
+            """,
+            (
+                req.name.strip(),
+                req.email.strip().lower(),
+                hash_password(req.password),
+                datetime.utcnow().isoformat(),
+            ),
+        )
+        conn.commit()
+        user_id = cur.lastrowid
+    except sqlite3.IntegrityError:
+        conn.close()
+        raise HTTPException(status_code=400, detail="Email già registrata")
+
+    cur.execute("SELECT * FROM users WHERE id = ?", (user_id,))
+    row = cur.fetchone()
+    conn.close()
+    return UserPublic(
+        id=row["id"],
+        name=row["name"],
+        email=row["email"],
+        is_admin=bool(row["is_admin"]),
+        created_at=row["created_at"],
+        last_login=row["last_login"],
+    )
+
+
+@app.post("/api/login", response_model=UserPublic)
+async def login_user(req: LoginRequest):
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute(
+        "SELECT * FROM users WHERE email = ?", (req.email.strip().lower(),)
+    )
+    row = cur.fetchone()
+    if not row or not verify_password(req.password, row["password_hash"]):
+        conn.close()
+        raise HTTPException(status_code=401, detail="Credenziali non valide")
+
+    cur.execute(
+        "UPDATE users SET last_login = ? WHERE id = ?",
+        (datetime.utcnow().isoformat(), row["id"]),
+    )
+    conn.commit()
+    conn.close()
+
+    return UserPublic(
+        id=row["id"],
+        name=row["name"],
+        email=row["email"],
+        is_admin=bool(row["is_admin"]),
+        created_at=row["created_at"],
+        last_login=row["last_login"],
+    )
+
+
+async def require_admin(
+    x_admin_secret: str = Header(..., alias="X-Admin-Secret"),
+):
+    if x_admin_secret != ADMIN_SECRET:
+        raise HTTPException(status_code=403, detail="Non autorizzato")
+
+
+@app.get(
+    "/admin/users",
+    response_model=list[UserPublic],
+    dependencies=[Depends(require_admin)],
+)
+async def list_users():
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute("SELECT * FROM users ORDER BY created_at DESC")
+    rows = cur.fetchall()
+    conn.close()
+    return [
+        UserPublic(
+            id=r["id"],
+            name=r["name"],
+            email=r["email"],
+            is_admin=bool(r["is_admin"]),
+            created_at=r["created_at"],
+            last_login=r["last_login"],
+        )
+        for r in rows
+    ]
+
+
+class UpdateUserRequest(BaseModel):
+    is_admin: bool | None = None
+
+
+@app.patch(
+    "/admin/users/{user_id}",
+    response_model=UserPublic,
+    dependencies=[Depends(require_admin)],
+)
+async def update_user(user_id: int, body: UpdateUserRequest):
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute("SELECT * FROM users WHERE id = ?", (user_id,))
+    row = cur.fetchone()
+    if not row:
+        conn.close()
+        raise HTTPException(status_code=404, detail="Utente non trovato")
+
+    if body.is_admin is not None:
+        cur.execute(
+            "UPDATE users SET is_admin = ? WHERE id = ?",
+            (1 if body.is_admin else 0, user_id),
+        )
+        conn.commit()
+
+    cur.execute("SELECT * FROM users WHERE id = ?", (user_id,))
+    row = cur.fetchone()
+    conn.close()
+    return UserPublic(
+        id=row["id"],
+        name=row["name"],
+        email=row["email"],
+        is_admin=bool(row["is_admin"]),
+        created_at=row["created_at"],
+        last_login=row["last_login"],
+    )
+
+# =====================================================
+#                  PROF / PERPLEXITY
+# =====================================================
 
 class TutorRequest(BaseModel):
     message: str
@@ -174,48 +385,44 @@ async def call_perplexity(message: str, points: int, level: int) -> TutorRespons
 async def tutor_endpoint(req: TutorRequest):
     return await call_perplexity(req.message, req.points, req.level)
 
+# =====================================================
+#                     TTS (ancora disponibile)
+# =====================================================
 
-# ====== ElevenLabs TTS ======
 @app.get("/tts")
 @app.post("/tts")
 async def tts(text: str = Query(..., min_length=1)):
     """
-    Converte il testo in audio usando ElevenLabs e restituisce un MP3.
+    Converte il testo in audio usando OpenAI TTS e restituisce un MP3.
     Accetta sia GET (/tts?text=...) che POST.
     """
-    if not ELEVEN_API_KEY:
-        return {"error": "ELEVENLABS_API_KEY non configurata"}
+    if not OPENAI_API_KEY:
+        print("ERRORE TTS: OPENAI_API_KEY non configurata")
+        return StreamingResponse(iter([b""]), media_type="audio/mpeg")
 
-    url = f"https://api.elevenlabs.io/v1/text-to-speech/{VOICE_ID}"
+    try:
+        client = OpenAI(api_key=OPENAI_API_KEY)
 
-    headers = {
-        "xi-api-key": ELEVEN_API_KEY,
-        "Accept": "audio/mpeg",
-        "Content-Type": "application/json",
-    }
+        res = client.audio.speech.with_raw_response.create(
+            model="gpt-4o-mini-tts",
+            voice="onyx",
+            input=text,
+            format="mp3",
+        )
 
-    payload = {
-        "text": text,
-        "model_id": "eleven_multilingual_v2",
-        "voice_settings": {
-            "stability": 0.4,
-            "similarity_boost": 0.8,
-        },
-    }
+        audio_bytes = res.read()
 
-    async with httpx.AsyncClient(timeout=30.0) as client:
-        r = await client.post(url, headers=headers, json=payload)
-        print("DEBUG TTS STATUS:", r.status_code)
-        if not r.is_success:
-            print("DEBUG TTS TEXT:", r.text[:1000])
-        r.raise_for_status()
-        audio_bytes = r.content
+        return StreamingResponse(
+            iter([audio_bytes]),
+            media_type="audio/mpeg",
+        )
+    except Exception as e:
+        print("ERRORE TTS OpenAI:", repr(e))
+        return StreamingResponse(iter([b""]), media_type="audio/mpeg")
 
-    return StreamingResponse(
-        iter([audio_bytes]),
-        media_type="audio/mpeg",
-    )
-
+# =====================================================
+#                     WS VOICE TEST
+# =====================================================
 
 @app.websocket("/ws/voice")
 async def ws_voice(websocket: WebSocket):
