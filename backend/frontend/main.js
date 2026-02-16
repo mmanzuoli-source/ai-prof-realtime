@@ -3,7 +3,7 @@ import { initAvatar3D, resizeAvatar, setTalkingIntensity } from "./avatar.js";
 
 let avatarInitialized = false;
 
-// URL backend (locale vs produzione)
+// URL backend (locale vs produzione) – non lo usiamo più per le fetch in prod
 const BASE_URL =
   window.location.hostname === "localhost"
     ? "http://localhost:8000"
@@ -61,9 +61,9 @@ async function speakText(text) {
   try {
     setTalkingIntensity(1.0);
 
-    // Chiama l'endpoint /tts del backend, passando text come query param
+    // Percorso relativo: va sempre sullo stesso origin (/tts)
     const response = await fetch(
-      `${BASE_URL}/tts?text=${encodeURIComponent(text)}`,
+      `/tts?text=${encodeURIComponent(text)}`,
       { method: "POST" }
     );
 
@@ -811,7 +811,8 @@ function initChat() {
     console.log("Streak aggiornata:", newStreak);
 
     try {
-      const res = await fetch(`${BASE_URL}/tutor`, {
+      // Percorso relativo: va su /tutor dello stesso origin
+      const res = await fetch(`/tutor`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ message: textForModel, points, level }),
