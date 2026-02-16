@@ -12,6 +12,7 @@ load_dotenv()
 
 PERPLEXITY_API_KEY = os.getenv("PERPLEXITY_API_KEY")
 ELEVEN_API_KEY = os.getenv("ELEVENLABS_API_KEY")
+print("DEBUG ELEVEN_API_KEY prefix:", (ELEVEN_API_KEY or "")[:8])
 
 # ID di una voce ElevenLabs (puoi cambiarla dalla dashboard Eleven)
 VOICE_ID = os.getenv("ELEVENLABS_VOICE_ID", "nPczCjzI2devNBz1zQrb")  # Brian - Deep, Resonant
