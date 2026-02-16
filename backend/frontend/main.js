@@ -1,4 +1,4 @@
-// main.v2.js
+// main.js
 import { initAvatar3D, resizeAvatar, setTalkingIntensity } from "./avatar.js";
 
 let avatarInitialized = false;
@@ -886,7 +886,6 @@ function initChat() {
     }
     if (listenModeBtn) {
       listenModeBtn.textContent = "👂";
-      listenModeBtn.style.background = "#020617";
     }
     if (listenPreview) {
       listenPreview.style.display = "none";
