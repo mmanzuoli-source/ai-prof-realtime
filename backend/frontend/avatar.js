@@ -1,4 +1,4 @@
-// avatar.js
+4// avatar.js
 import * as THREE from "three";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 
@@ -28,7 +28,7 @@ export function initAvatar3D() {
   // scene.background = new THREE.Color(0x020617);
 
   camera = new THREE.PerspectiveCamera(40, width / height, 0.1, 100);
-  camera.position.set(0, 2.3, 1.0);
+  camera.position.set(0, 2.6, 1.0);
 
   const ambient = new THREE.AmbientLight(0xffffff, 0.7);
   scene.add(ambient);
@@ -71,11 +71,11 @@ export function initAvatar3D() {
       box.getCenter(center);
 
       const maxSize = Math.max(size.x, size.y, size.z) || 1;
-      const scale = 2.2 / maxSize;
+      const scale = 0.8 / maxSize;
       model.scale.set(scale, scale, scale);
 
       model.position.sub(center.multiplyScalar(scale));
-      model.position.y += 0.2;
+      model.position.y += 0.1;
 
       scene.add(model);
 
