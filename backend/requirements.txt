@@ -4,3 +4,4 @@ websockets
 python-dotenv
 httpx
 pydantic
+passlib[bcrypt]
