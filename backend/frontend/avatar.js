@@ -1,4 +1,4 @@
-4// avatar.js
+// avatar.js
 import * as THREE from "three";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 
@@ -24,8 +24,6 @@ export function initAvatar3D() {
   const height = container.clientHeight || 480;
 
   scene = new THREE.Scene();
-  // niente background colore: lasciamo trasparente
-  // scene.background = new THREE.Color(0x020617);
 
   camera = new THREE.PerspectiveCamera(40, width / height, 0.1, 100);
   camera.position.set(0, 2.6, 1.0);
@@ -36,16 +34,13 @@ export function initAvatar3D() {
   dir.position.set(2, 4, 3);
   scene.add(dir);
 
-  // renderer con alpha: true per rendere il canvas trasparente
   renderer = new THREE.WebGLRenderer({
     antialias: true,
     alpha: true,
   });
   renderer.setSize(width, height);
   renderer.setPixelRatio(window.devicePixelRatio || 1);
-
-  // opzionale: assicuriamo che lo sfondo del canvas sia trasparente
-  renderer.setClearColor(0x000000, 0); // alpha = 0
+  renderer.setClearColor(0x000000, 0); // canvas trasparente
 
   container.innerHTML = "";
   container.appendChild(renderer.domElement);
@@ -89,7 +84,7 @@ export function initAvatar3D() {
 
         baseAction = mixer.clipAction(clip);
         baseAction.reset();
-        baseAction.loop = THREE.LoopRepeat; // sempre in loop
+        baseAction.loop = THREE.LoopRepeat;
         baseAction.clampWhenFinished = false;
         baseAction.enabled = true;
         baseAction.weight = 1.0;
@@ -124,29 +119,32 @@ function animate() {
   const delta = clock.getDelta();
   const t = clock.elapsedTime;
 
+  const talk = THREE.MathUtils.clamp(currentTalkingIntensity, 0, 1);
+  const talking = talk >= 0.05; // soglia di partenza
+
+  // aggiorno la clip SOLO quando parla
   if (mixer && baseAction) {
-    const speed = 0.6 + currentTalkingIntensity * 1.4;
-    mixer.update(delta * speed);
+    if (talking) {
+      const speed = 0.6 + talk * 1.4;
+      mixer.update(delta * speed);
+    }
   }
 
- if (modelRoot) {
-  const talk = THREE.MathUtils.clamp(currentTalkingIntensity, 0, 1);
+  // movimento corpo SOLO quando parla
+  if (modelRoot) {
+    if (!talking) {
+      // fermo, posa neutra
+      modelRoot.rotation.x = 0;
+      modelRoot.rotation.y = 0;
+      modelRoot.position.y = 0.5; // neutro, aggiusta se serve
+    } else {
+      const rotAmp = 0.08 * talk;
+      const posAmp = 0.03 * talk;
 
-  // idle leggero sempre attivo
-  const idleRotAmp = 0.02;  // ondeggio base
-  const idlePosAmp = 0.01;
-
-  // extra movimento quando parla
-  const talkRotAmp = 0.08 * talk;
-  const talkPosAmp = 0.03 * talk;
-
-  const rotAmp = idleRotAmp + talkRotAmp;
-  const posAmp = idlePosAmp + talkPosAmp;
-
-  modelRoot.rotation.y = Math.sin(t * 2.0) * rotAmp;
-  modelRoot.rotation.x = Math.sin(t * 1.7) * rotAmp * 0.6;
-  modelRoot.position.y = 0.5 + Math.sin(t * 3.0) * posAmp * 0.1;
-}
+      modelRoot.rotation.y = Math.sin(t * 2.0) * rotAmp;
+      modelRoot.rotation.x = Math.sin(t * 1.7) * rotAmp * 0.6;
+      modelRoot.position.y = 0.5 + Math.sin(t * 3.0) * posAmp * 0.1;
+    }
   }
 
   renderer.render(scene, camera);
