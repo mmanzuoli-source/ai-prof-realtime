@@ -129,19 +129,24 @@ function animate() {
     mixer.update(delta * speed);
   }
 
-  if (modelRoot) {
-    const talk = THREE.MathUtils.clamp(currentTalkingIntensity, 0, 1);
-    if (talk > 0.01) {
-      const ampRot = 0.08 * talk;
-      const ampPos = 0.03 * talk;
-      modelRoot.rotation.y = Math.sin(t * 2.0) * ampRot;
-      modelRoot.rotation.x = Math.sin(t * 1.7) * ampRot * 0.6;
-      modelRoot.position.y = 0.5 + Math.sin(t * 3.0) * ampPos * 0.1;
-    } else {
-      modelRoot.rotation.x *= 0.9;
-      modelRoot.rotation.y *= 0.9;
-      modelRoot.position.y += (0.5 - modelRoot.position.y) * 0.1;
-    }
+ if (modelRoot) {
+  const talk = THREE.MathUtils.clamp(currentTalkingIntensity, 0, 1);
+
+  // idle leggero sempre attivo
+  const idleRotAmp = 0.02;  // ondeggio base
+  const idlePosAmp = 0.01;
+
+  // extra movimento quando parla
+  const talkRotAmp = 0.08 * talk;
+  const talkPosAmp = 0.03 * talk;
+
+  const rotAmp = idleRotAmp + talkRotAmp;
+  const posAmp = idlePosAmp + talkPosAmp;
+
+  modelRoot.rotation.y = Math.sin(t * 2.0) * rotAmp;
+  modelRoot.rotation.x = Math.sin(t * 1.7) * rotAmp * 0.6;
+  modelRoot.position.y = 0.5 + Math.sin(t * 3.0) * posAmp * 0.1;
+}
   }
 
   renderer.render(scene, camera);
