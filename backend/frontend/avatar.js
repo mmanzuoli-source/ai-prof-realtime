@@ -120,23 +120,19 @@ function animate() {
   const t = clock.elapsedTime;
 
   const talk = THREE.MathUtils.clamp(currentTalkingIntensity, 0, 1);
-  const talking = talk >= 0.05; // soglia di partenza
+  const talking = talk >= 0.05; // soglia di partenza movimento extra
 
-  // aggiorno la clip SOLO quando parla
+  // 1) La clip GLB gira sempre: posa naturale, più lenta in idle
   if (mixer && baseAction) {
-    if (talking) {
-      const speed = 0.6 + talk * 1.4;
-      mixer.update(delta * speed);
-    }
+    const baseSpeed = talking ? (0.6 + talk * 1.4) : 0.4;
+    mixer.update(delta * baseSpeed);
   }
 
-  // movimento corpo SOLO quando parla
+  // 2) Movimento corpo aggiuntivo solo quando parla
   if (modelRoot) {
     if (!talking) {
-      // fermo, posa neutra
-      modelRoot.rotation.x = 0;
-      modelRoot.rotation.y = 0;
-      modelRoot.position.y = 0.5; // neutro, aggiusta se serve
+      // niente oscillazioni extra: resta nella posa data dall'animazione
+      // non tocchiamo rotation / position per non forzare T-pose
     } else {
       const rotAmp = 0.08 * talk;
       const posAmp = 0.03 * talk;
