@@ -1,823 +1,161 @@
-<!DOCTYPE html>
-<html lang="it">
-  <head>
-    <meta charset="UTF-8" />
-    <title>AI Prof Realtime</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+4// avatar.js
+import * as THREE from "three";
+import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 
-<style>
-  * {
-    box-sizing: border-box;
-    margin: 0;
-    padding: 0;
+const MODEL_URL = "/app/models/avatar.glb";
+
+let scene, camera, renderer;
+let mixer = null;
+let clock = new THREE.Clock();
+let currentTalkingIntensity = 0;
+let containerRef = null;
+let modelRoot = null;
+let baseAction = null;
+
+export function initAvatar3D() {
+  const container = document.getElementById("avatar-3d");
+  if (!container) {
+    console.warn("Container #avatar-3d non trovato");
+    return;
   }
-
-  body {
-    font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text",
-      sans-serif;
-    background: #020617;
-    color: #e5e7eb;
-    min-height: 100vh;
-    display: flex;
-    justify-content: center;
-    align-items: stretch;
-    padding: 16px;
-  }
-
-  /* MOBILE-FIRST: colonna */
-  .app-shell {
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-    width: 100%;
-    max-width: 1200px;
-  }
-
-  .left-pane,
-  .right-pane {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-  }
-
-  #avatar-3d {
-    width: 100%;
-    height: 320px;
-    border-radius: 16px;
-    overflow: hidden;
-    border: 1px solid #1f2937;
-    background-image: url("wallpaperprof.png");
-    background-size: cover;
-    background-position: center;
-  }
-
-  #avatar-3d canvas {
-    width: 100%;
-    height: 100%;
-    display: block;
-    background: transparent !important;
-  }
-
-  .panel {
-    background: #020617;
-    border-radius: 16px;
-    border: 1px solid #1f2937;
-    padding: 16px;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-  }
-
-  .right-pane > .panel {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    min-height: 0;
-    overflow: hidden;
-  }
-
-  .hud-top {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 12px;
-    font-size: 13px;
-    color: #9ca3af;
-    flex-shrink: 0;
-  }
-
-  .xp-wrapper {
-    flex: 1;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-
-  .xp-bar-wrap {
-    flex: 1;
-    height: 6px;
-    border-radius: 999px;
-    background: #020617;
-    border: 1px solid #1f2937;
-    overflow: hidden;
-  }
-
-  #xp-bar {
-    height: 100%;
-    width: 0;
-    border-radius: 999px;
-    background: linear-gradient(to right, #22c55e, #16a34a);
-  }
-
-  #messages {
-    flex: 1 1 0;
-    overflow-y: scroll;
-    overflow-x: hidden;
-    padding: 8px;
-    border-radius: 12px;
-    background: #020617;
-    border: 1px solid #1f2937;
-    display: flex;
-    flex-direction: column;
-    scrollbar-width: thin;
-    scrollbar-color: #374151 #020617;
-  }
-
-  #messages::-webkit-scrollbar {
-    width: 8px;
-  }
-
-  #messages::-webkit-scrollbar-track {
-    background: #020617;
-    border-radius: 8px;
-  }
-
-  #messages::-webkit-scrollbar-thumb {
-    background: #374151;
-    border-radius: 8px;
-  }
-
-  #messages::-webkit-scrollbar-thumb:hover {
-    background: #4b5563;
-  }
-
-  .msg {
-    padding: 8px 10px;
-    border-radius: 10px;
-    margin-bottom: 8px;
-    font-size: 14px;
-    line-height: 1.3;
-    max-width: 100%;
-    flex-shrink: 0;
-  }
-
-  .msg.prof {
-    background: #0b1120;
-    border: 1px solid #1d4ed8;
-    align-self: flex-start;
-  }
-
-  .msg.user {
-    background: #16a34a;
-    color: #f9fafb;
-    align-self: flex-end;
-  }
-
-  .input-row {
-    display: flex;
-    gap: 8px;
-    margin-top: 8px;
-    flex-shrink: 0;
-    flex-wrap: wrap;
-  }
-
-  #user-input {
-    flex: 1;
-    min-width: 0;
-    padding: 8px 10px;
-    border-radius: 999px;
-    border: 1px solid #1f2937;
-    background: #020617;
-    color: #e5e7eb;
-    font-size: 14px;
-  }
-
-  #user-input::placeholder {
-    color: #6b7280;
-  }
-
-  .input-buttons {
-    display: flex;
-    gap: 4px;
-    flex-wrap: wrap;
-  }
-
-  .round-btn {
-    border-radius: 999px;
-    border: 1px solid #1f2937;
-    background: #020617;
-    color: #e5e7eb;
-    padding: 0 10px;
-    font-size: 14px;
-    cursor: pointer;
-    height: 36px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  #send-btn {
-    background: #2563eb;
-    border: none;
-    color: white;
-    font-weight: 500;
-  }
-
-  #send-btn:disabled {
-    opacity: 0.5;
-    cursor: default;
-  }
-
-  .hud-bottom {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    font-size: 13px;
-    color: #9ca3af;
-    margin-top: 4px;
-    flex-shrink: 0;
-    flex-wrap: wrap;
-    gap: 8px;
-  }
-
-  #history-btn {
-    cursor: pointer;
-    font-size: 13px;
-    color: #93c5fd;
-    text-decoration: underline;
-    background: none;
-    border: none;
-    padding: 0;
-  }
-
-  #logout-btn {
-    border-radius: 999px;
-    border: 1px solid #1f2937;
-    background: #111827;
-    color: #f9fafb;
-    font-size: 12px;
-    padding: 4px 10px;
-    cursor: pointer;
-  }
-
-  #history-panel {
-    border-top: 1px solid rgba(31, 41, 55, 0.9);
-    max-height: 260px;
-    overflow-y: auto;
-    padding-top: 8px;
-    margin-top: 4px;
-    font-size: 13px;
-    display: none;
-  }
-
-  #history-summary-text {
-    margin-bottom: 4px;
-  }
-
-  #history-content {
-    margin-bottom: 8px;
-  }
-
-  #clear-history-btn {
-    border-radius: 999px;
-    border: 1px solid #1f2937;
-    background: #111827;
-    color: #f9fafb;
-    font-size: 12px;
-    padding: 4px 10px;
-    cursor: pointer;
-  }
-
-  #last-session-summary {
-    font-size: 12px;
-    color: #9ca3af;
-    margin-top: 4px;
-  }
-
-  .missions-panel {
-    margin-top: 12px;
-    padding-top: 8px;
-    border-top: 1px solid rgba(31, 41, 55, 0.9);
-  }
-
-  #missions-streak-label {
-    font-size: 13px;
-    color: #9ca3af;
-    margin-bottom: 4px;
-  }
-
-  #missions-list {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    font-size: 13px;
-  }
-
-  .mission-item {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-
-  .mission-dot {
-    width: 10px;
-    height: 10px;
-    border-radius: 999px;
-    border: 1px solid #4b5563;
-    background: #020617;
-  }
-
-  .mission-dot.completed {
-    background: #22c55e;
-    border-color: #16a34a;
-  }
-
-  .mission-progress {
-    font-size: 11px;
-    color: #9ca3af;
-  }
-
-  #login-panel {
-    position: fixed;
-    inset: 0;
-    background: radial-gradient(circle at top, rgba(15, 23, 42, 0.98), #020617);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 50;
-  }
-
-  .login-box {
-    width: 100%;
-    max-width: 360px;
-    background: rgba(15, 23, 42, 0.95);
-    border-radius: 16px;
-    border: 1px solid rgba(55, 65, 81, 0.9);
-    padding: 24px 20px 20px;
-    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
-  }
-
-  .login-box h2 {
-    font-size: 20px;
-    margin-bottom: 8px;
-  }
-
-  .login-box p {
-    font-size: 13px;
-    color: #9ca3af;
-    margin-bottom: 16px;
-  }
-
-  .login-box input {
-    width: 100%;
-    padding: 10px 12px;
-    border-radius: 999px;
-    border: 1px solid #1f2937;
-    background: #020617;
-    color: #e5e7eb;
-    font-size: 14px;
-    margin-bottom: 12px;
-  }
-
-  .login-box button {
-    width: 100%;
-    border-radius: 999px;
-    border: none;
-    padding: 10px 12px;
-    font-size: 14px;
-    cursor: pointer;
-    font-weight: 500;
-  }
-
-  .login-subtext {
-    font-size: 12px;
-    color: #9ca3af;
-    text-align: center;
-    margin-top: 4px;
-  }
-
-  .login-subtext span {
-    color: #93c5fd;
-  }
-
-  /* DESKTOP: avatar sinistra, chat destra */
-  @media (min-width: 900px) {
-    body {
-      padding: 24px;
-      align-items: flex-start;
-    }
-
-    .app-shell {
-      flex-direction: row;
-      gap: 24px;
-    }
-
-    .left-pane {
-      flex: 0 0 40%;
-    }
-
-    .right-pane {
-      flex: 1 1 60%;
-    }
-
-    #avatar-3d {
-      height: 480px;
-    }
-  }
-</style>
-  </head>
-
-  <body>
-    <!-- LOGIN OVERLAY -->
-    <div id="login-panel">
-      <div class="login-box">
-        <h2>Accedi al tuo Tutor</h2>
-        <p>Scegli un profilo salvato oppure creane uno nuovo.</p>
-
-        <!-- Tabs login/registrazione -->
-        <div
-          class="login-tabs"
-          style="
-            display:flex;
-            margin-bottom:12px;
-            border-radius:999px;
-            border:1px solid #1f2937;
-            overflow:hidden;
-          "
-        >
-          <button
-            id="tab-login"
-            class="login-tab active"
-            type="button"
-            style="
-              flex:1;
-              padding:8px 0;
-              border:none;
-              background:#111827;
-              color:#e5e7eb;
-              font-size:13px;
-              cursor:pointer;
-            "
-          >
-            Ho già un account
-          </button>
-          <button
-            id="tab-register"
-            class="login-tab"
-            type="button"
-            style="
-              flex:1;
-              padding:8px 0;
-              border:none;
-              background:transparent;
-              color:#9ca3af;
-              font-size:13px;
-              cursor:pointer;
-            "
-          >
-            Sono nuovo
-          </button>
-        </div>
-
-        <!-- LOGIN UTENTE ESISTENTE -->
-        <div id="login-existing">
-          <label
-            for="login-user-select"
-            class="login-label"
-            style="font-size: 13px; color: #9ca3af; margin-bottom: 4px; display: block;"
-          >
-            Scegli il tuo profilo
-          </label>
-          <select
-            id="login-user-select"
-            style="
-              width: 100%;
-              padding: 10px 12px;
-              border-radius: 999px;
-              border: 1px solid #1f2937;
-              background: #020617;
-              color: #e5e7eb;
-              font-size: 14px;
-              margin-bottom: 12px;
-            "
-          >
-            <option value="">Nessun profilo salvato</option>
-          </select>
-          <button id="login-existing-btn" disabled>Entra</button>
-
-          <!-- Divider -->
-          <div
-            style="
-              margin: 10px 0 6px;
-              font-size: 11px;
-              color: #6b7280;
-              text-align: center;
-            "
-          >
-            oppure accedi con email e password
-          </div>
-
-          <!-- Login via email/password -->
-          <input
-            type="email"
-            id="login-email"
-            placeholder="nome@scuola.it"
-            autocomplete="email"
-            style="margin-bottom: 6px;"
-          />
-          <input
-            type="password"
-            id="login-password"
-            placeholder="Password"
-            autocomplete="current-password"
-            style="margin-bottom: 8px;"
-          />
-          <button
-            id="login-email-btn"
-            type="button"
-            style="margin-bottom: 4px;"
-          >
-            Accedi
-          </button>
-
-          <!-- Link reset password -->
-          <div
-            style="
-              margin-top: 4px;
-              font-size: 12px;
-              color: #9ca3af;
-              text-align: right;
-            "
-          >
-            <button
-              id="forgot-password-link"
-              type="button"
-              style="
-                background: none;
-                border: none;
-                color: #60a5fa;
-                cursor: pointer;
-                padding: 0;
-                font-size: 12px;
-                text-decoration: underline;
-              "
-            >
-              Ho dimenticato la password
-            </button>
-          </div>
-
-          <!-- Mini form reset password (nascosto) -->
-          <div
-            id="forgot-password-panel"
-            style="
-              display: none;
-              margin-top: 10px;
-              padding-top: 8px;
-              border-top: 1px solid #111827;
-            "
-          >
-            <label
-              for="forgot-email"
-              class="login-label"
-              style="font-size: 12px; color: #9ca3af; margin-bottom: 4px; display: block;"
-            >
-              Email del profilo
-            </label>
-            <input
-              type="email"
-              id="forgot-email"
-              placeholder="nome@scuola.it"
-              autocomplete="email"
-              style="margin-bottom: 6px;"
-            />
-
-            <label
-              for="forgot-password"
-              class="login-label"
-              style="font-size: 12px; color: #9ca3af; margin-bottom: 4px; display: block;"
-            >
-              Nuova password
-            </label>
-            <input
-              type="password"
-              id="forgot-password"
-              placeholder="Nuova password"
-              autocomplete="new-password"
-              style="margin-bottom: 6px;"
-            />
-
-            <button
-              id="forgot-password-btn"
-              type="button"
-              style="width: 100%; margin-top: 4px;"
-            >
-              Reimposta password
-            </button>
-          </div>
-        </div>
-
-        <!-- REGISTRAZIONE NUOVO UTENTE -->
-        <div id="login-register" style="display: none;">
-          <label
-            for="register-name"
-            class="login-label"
-            style="font-size: 13px; color: #9ca3af; margin-bottom: 4px; display: block;"
-          >
-            Come ti chiami?
-          </label>
-          <input
-            type="text"
-            id="register-name"
-            placeholder="Il tuo nome"
-            autocomplete="name"
-          />
-
-          <label
-            for="register-email"
-            class="login-label"
-            style="font-size: 13px; color: #9ca3af; margin-bottom: 4px; margin-top: 4px; display: block;"
-          >
-            Email
-          </label>
-          <input
-            type="email"
-            id="register-email"
-            placeholder="nome@scuola.it"
-            autocomplete="email"
-          />
-
-          <label
-            for="register-password"
-            class="login-label"
-            style="font-size: 13px; color: #9ca3af; margin-bottom: 4px; margin-top: 4px; display: block;"
-          >
-            Password
-          </label>
-          <input
-            type="password"
-            id="register-password"
-            placeholder="Scegli una password"
-            autocomplete="new-password"
-          />
-
-          <button id="register-btn">Crea profilo</button>
-        </div>
-
-        <div class="login-subtext">
-          I tuoi punti e la cronologia restano salvati su questo dispositivo.
-        </div>
-      </div>
-    </div>
-
-    <!-- APP PRINCIPALE -->
-    <div class="app-shell" id="app-panel">
-      <section class="left-pane">
-        <div id="avatar-3d"></div>
-
-        <div class="panel">
-          <div id="history-panel">
-            <div id="history-summary-text">
-              Nessuna cronologia disponibile.
-            </div>
-            <div id="history-content"></div>
-            <button id="clear-history-btn">Pulisci cronologia</button>
-            <div id="last-session-summary"></div>
-          </div>
-
-          <div class="missions-panel">
-            <div id="missions-streak-label">Nessuna streak</div>
-            <div id="missions-list"></div>
-          </div>
-        </div>
-      </section>
-
-      <section class="right-pane">
-        <div class="panel">
-          <div class="hud-top">
-            <div style="display:flex;flex-direction:column;gap:4px;min-width:0;">
-              <div style="display:flex;flex-wrap:wrap;gap:6px;font-size:12px;color:#9ca3af;">
-                <div style="display:flex;align-items:center;gap:4px;min-width:0;">
-                  <span>Scuola:</span>
-                  <input
-                    id="school-input"
-                    type="text"
-                    placeholder="es. Prima media"
-                    style="flex:1;min-width:80px;max-width:140px;padding:2px 6px;border-radius:999px;border:1px solid #1f2937;background:#020617;color:#e5e7eb;font-size:11px;"
-                  />
-                </div>
-                <div style="display:flex;align-items:center;gap:4px;min-width:0;">
-                  <span>Materia:</span>
-                  <input
-                    id="subject-input"
-                    type="text"
-                    placeholder="es. Storia"
-                    style="flex:1;min-width:80px;max-width:120px;padding:2px 6px;border-radius:999px;border:1px solid #1f2937;background:#020617;color:#e5e7eb;font-size:11px;"
-                  />
-                </div>
-              </div>
-              <div>
-                <div id="score-label">XP: 0</div>
-                <div id="level-label" style="font-size:12px;color:#9ca3af;">
-                  Livello 1 • Novizio
-                </div>
-              </div>
-            </div>
-            <div class="xp-wrapper">
-              <span style="font-size:12px;">Progresso</span>
-              <div class="xp-bar-wrap">
-                <div id="xp-bar"></div>
-              </div>
-            </div>
-          </div>
-
-          <div id="messages"></div>
-
-          <!-- Box anteprima modalità ascolto -->
-          <div
-            id="listen-preview"
-            style="
-              display:none;
-              margin-top:8px;
-              font-size:12px;
-              color:#9ca3af;
-              padding:8px;
-              border-radius:10px;
-              border:1px solid #1f2937;
-              background:#020617;
-              max-height:80px;
-              overflow-y:auto;
-            "
-          >
-            <strong>Testo in modalità ascolto:</strong>
-            <span id="listen-preview-text"></span>
-          </div>
-
-          <div class="input-row">
-            <input
-              id="user-input"
-              type="text"
-              placeholder="Scrivi al tuo prof AI..."
-              autocomplete="off"
-            />
-            <div class="input-buttons">
-              <!-- Dettatura normale -->
-              <button id="mic-btn" class="round-btn" title="Detta al prof">
-                🎤
-              </button>
-
-              <!-- Modalità ascolto/lettura -->
-              <button
-                id="listen-mode-btn"
-                class="round-btn"
-                title="Modalità ascolto (lettura e ripetizione)"
-              >
-                👂
-              </button>
-
-              <!-- Controlli voce del prof -->
-              <button
-                id="play-voice-btn"
-                class="round-btn"
-                title="Riprendi la voce"
-              >
-                ▶️
-              </button>
-              <button
-                id="pause-voice-btn"
-                class="round-btn"
-                title="Metti in pausa la voce"
-              >
-                ⏸️
-              </button>
-              <button
-                id="stop-voice-btn"
-                class="round-btn"
-                title="Ferma la voce"
-              >
-                ⏹️
-              </button>
-
-              <!-- Invia testo -->
-              <button id="send-btn" class="round-btn">Invia</button>
-            </div>
-          </div>
-
-          <div class="hud-bottom">
-            <span id="status-label">Offline</span>
-            <div style="display:flex;gap:8px;align-items:center;">
-              <button id="history-btn">Cronologia</button>
-              <button id="logout-btn">Logout</button>
-            </div>
-          </div>
-        </div>
-      </section>
-    </div>
-
-    <script type="importmap">
-      {
-        "imports": {
-          "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
-          "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+  containerRef = container;
+
+  const width = container.clientWidth;
+  const height = container.clientHeight || 480;
+
+  scene = new THREE.Scene();
+  // niente background colore: lasciamo trasparente
+  // scene.background = new THREE.Color(0x020617);
+
+  camera = new THREE.PerspectiveCamera(40, width / height, 0.1, 100);
+  camera.position.set(0, 2.6, 1.0);
+
+  const ambient = new THREE.AmbientLight(0xffffff, 0.7);
+  scene.add(ambient);
+  const dir = new THREE.DirectionalLight(0xffffff, 1.0);
+  dir.position.set(2, 4, 3);
+  scene.add(dir);
+
+  // renderer con alpha: true per rendere il canvas trasparente
+  renderer = new THREE.WebGLRenderer({
+    antialias: true,
+    alpha: true,
+  });
+  renderer.setSize(width, height);
+  renderer.setPixelRatio(window.devicePixelRatio || 1);
+
+  // opzionale: assicuriamo che lo sfondo del canvas sia trasparente
+  renderer.setClearColor(0x000000, 0); // alpha = 0
+
+  container.innerHTML = "";
+  container.appendChild(renderer.domElement);
+
+  const loader = new GLTFLoader();
+  loader.load(
+    MODEL_URL,
+    (gltf) => {
+      const model = gltf.scene;
+      modelRoot = model;
+
+      model.traverse((obj) => {
+        if (obj.isMesh) {
+          obj.castShadow = true;
+          obj.receiveShadow = true;
         }
+      });
+
+      const box = new THREE.Box3().setFromObject(model);
+      const size = new THREE.Vector3();
+      const center = new THREE.Vector3();
+      box.getSize(size);
+      box.getCenter(center);
+
+      const maxSize = Math.max(size.x, size.y, size.z) || 1;
+      const scale = 0.8 / maxSize;
+      model.scale.set(scale, scale, scale);
+
+      model.position.sub(center.multiplyScalar(scale));
+      model.position.y += 0.1;
+
+      scene.add(model);
+
+      mixer = new THREE.AnimationMixer(model);
+      const clips = gltf.animations || [];
+      console.log("Animazioni avatar:", clips.map((c) => c.name));
+
+      if (clips.length > 0) {
+        const clip =
+          clips.find((c) => c.name === "Standard_Smoking") || clips[0];
+
+        baseAction = mixer.clipAction(clip);
+        baseAction.reset();
+        baseAction.loop = THREE.LoopRepeat; // sempre in loop
+        baseAction.clampWhenFinished = false;
+        baseAction.enabled = true;
+        baseAction.weight = 1.0;
+        baseAction.play();
       }
-    </script>
 
-    <script type="module">
-      import * as THREE from "three";
-      window.THREE = THREE;
-    </script>
+      animate();
+    },
+    undefined,
+    (error) => {
+      console.error("Errore caricamento modello 3D:", error);
+      const geo = new THREE.BoxGeometry(1.2, 1.2, 1.2);
+      const mat = new THREE.MeshStandardMaterial({
+        color: 0x2563eb,
+        emissive: 0x1d4ed8,
+        metalness: 0.3,
+        roughness: 0.4,
+      });
+      const cube = new THREE.Mesh(geo, mat);
+      cube.position.y = 1.0;
+      scene.add(cube);
+      animate();
+    }
+  );
+}
 
-    <script type="module" src="/app/avatar.js"></script>
-    <script type="module" src="/app/main.v2.fix.js"></script>
-  </body>
-</html>
+function animate() {
+  if (!renderer || !scene || !camera) return;
+
+  requestAnimationFrame(animate);
+
+  const delta = clock.getDelta();
+  const t = clock.elapsedTime;
+
+  if (mixer && baseAction) {
+    const speed = 0.6 + currentTalkingIntensity * 1.4;
+    mixer.update(delta * speed);
+  }
+
+  if (modelRoot) {
+    const talk = THREE.MathUtils.clamp(currentTalkingIntensity, 0, 1);
+    if (talk > 0.01) {
+      const ampRot = 0.08 * talk;
+      const ampPos = 0.03 * talk;
+      modelRoot.rotation.y = Math.sin(t * 2.0) * ampRot;
+      modelRoot.rotation.x = Math.sin(t * 1.7) * ampRot * 0.6;
+      modelRoot.position.y = 0.5 + Math.sin(t * 3.0) * ampPos * 0.1;
+    } else {
+      modelRoot.rotation.x *= 0.9;
+      modelRoot.rotation.y *= 0.9;
+      modelRoot.position.y += (0.5 - modelRoot.position.y) * 0.1;
+    }
+  }
+
+  renderer.render(scene, camera);
+}
+
+export function resizeAvatar() {
+  if (!containerRef || !camera || !renderer) return;
+  const width = containerRef.clientWidth;
+  const height = containerRef.clientHeight || 480;
+  camera.aspect = width / height;
+  camera.updateProjectionMatrix();
+  renderer.setSize(width, height);
+}
+
+export function setTalkingIntensity(intensity) {
+  currentTalkingIntensity = THREE.MathUtils.clamp(intensity || 0, 0, 1);
+}
