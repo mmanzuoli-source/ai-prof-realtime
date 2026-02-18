@@ -390,30 +390,30 @@
     color: #93c5fd;
   }
 
-  /* DESKTOP: avatar sinistra, chat destra */
-  @media (min-width: 900px) {
-    body {
-      padding: 24px;
-      align-items: flex-start;
-    }
-
-    .app-shell {
-      flex-direction: row;
-      gap: 24px;
-    }
-
-    .left-pane {
-      flex: 0 0 40%;
-    }
-
-    .right-pane {
-      flex: 1 1 60%;
-    }
-
-    #avatar-3d {
-      height: 480px;
-    }
+/* DESKTOP/TABLET: due colonne */
+@media (min-width: 900px) {
+  body {
+    padding: 24px;
   }
+
+  .app-shell {
+    flex-direction: row;
+    gap: 24px;
+  }
+
+  .left-pane {
+    flex: 0 0 40%;
+  }
+
+  .right-pane {
+    flex: 1 1 60%;
+    min-height: 600px;   /* <<< AGGIUNGI QUESTA RIGA */
+  }
+
+  #avatar-3d {
+    height: 480px;
+  }
+}
 </style>
   </head>
 
