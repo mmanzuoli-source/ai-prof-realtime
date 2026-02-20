@@ -12,25 +12,18 @@ from fastapi import (
     WebSocketDisconnect,
     Query,
     HTTPException,
-    Depends,
-    Header,
-    status,
 )
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import StreamingResponse, RedirectResponse
-# ADMIN LOGIN DISABILITATO PER ORA
-# from fastapi.security import OAuth2PasswordRequestForm, OAuth2PasswordBearer
 from pydantic import BaseModel
 from passlib.context import CryptContext
 from openai import OpenAI
-from jose import JWTError, jwt
 
 load_dotenv()
 
 PERPLEXITY_API_KEY = os.getenv("PERPLEXITY_API_KEY")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-ADMIN_SECRET = os.getenv("ADMIN_SECRET", "changeme-admin-secret")
 
 print("DEBUG OPENAI_API_KEY prefix:", (OPENAI_API_KEY or "")[:8])
 
@@ -199,11 +192,6 @@ async def login_user(req: LoginRequest):
         created_at=row["created_at"],
         last_login=row["last_login"],
     )
-
-# =====================================================
-#   (ADMIN LOGIN disabilitato in questa versione)
-#   Se vorrai riattivarlo, ripristini da qui in giù.
-# =====================================================
 
 # =====================================================
 #                  PROF / PERPLEXITY
