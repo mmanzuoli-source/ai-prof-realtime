@@ -482,47 +482,34 @@
   </head>
 
   <body>
-    <!-- LOGIN ADMIN OVERLAY -->
-    <div id="admin-login-overlay">
-      <div class="admin-login-box">
-        <h2>Login amministratore</h2>
-        <p>Inserisci le credenziali admin per gestire l'app.</p>
-        <label
-          for="admin-username"
-          style="font-size: 13px; color: #9ca3af; margin-bottom: 4px; display: block;"
-        >
-          Username
-        </label>
-        <input
-          id="admin-username"
-          type="text"
-          autocomplete="username"
-          value="Admin"
-        />
+<!-- LOGIN ADMIN OVERLAY -->
+<div id="admin-login-overlay">
+  <div class="admin-login-box">
+    <h2>Login amministratore</h2>
+    <p>Inserisci le credenziali admin per gestire l'app.</p>
 
-        <label
-          for="admin-password"
-          style="font-size: 13px; color: #9ca3af; margin-bottom: 4px; display: block;"
-        >
-          Password
-        </label>
-        <input
-          id="admin-password"
-          type="password"
-          autocomplete="current-password"
-        />
+    <label for="admin-username">Username</label>
+    <input id="admin-username" type="text" autocomplete="username" value="Admin" />
 
-        <button id="admin-login-btn" type="button">
-          Entra come admin
-        </button>
+    <label for="admin-password">Password</label>
+    <input id="admin-password" type="password" autocomplete="current-password" />
 
-        <p
-          id="admin-login-error"
-          class="admin-login-error"
-          style="display:none;"
-        ></p>
-      </div>
-    </div>
+    <button id="admin-login-btn" type="button">
+      Entra come admin
+    </button>
+
+    <p id="admin-login-error" class="admin-login-error" style="display:none;"></p>
+  </div>
+</div>
+
+<!-- Pulsante accesso admin dentro la login utente -->
+<button
+  id="open-admin-login-btn"
+  type="button"
+  style="background:none;border:none;color:#60a5fa;cursor:pointer;font-size:12px;text-decoration:underline;"
+>
+  Accesso amministratore
+</button>
 
     <!-- LOGIN OVERLAY UTENTE -->
     <div id="login-panel">
