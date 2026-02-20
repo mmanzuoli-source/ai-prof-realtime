@@ -357,20 +357,22 @@ function initChat() {
     tabRegister.addEventListener("click", showRegisterTab);
   }
 
-function showAppForUserId(id) {
-  const user = getUserById(id);
-  const name = user ? user.name : "Studente";
+  // VERSIONE DI TEST: non nasconde la login e non mostra l'app
+  function showAppForUserId(id) {
+    const user = getUserById(id);
+    const name = user ? user.name : "Studente";
 
-  if (loginPanel) loginPanel.style.display = "none";
-  if (appPanel) appPanel.style.display = "block";   // <--- cambiata
-  if (statusLabel) statusLabel.textContent = `Online • Ciao, ${name}!`;
+    // if (loginPanel) loginPanel.style.display = "none";
+    // if (appPanel) appPanel.style.display = "block";
 
-  if (!avatarInitialized) {
-    initAvatar3D();
-    resizeAvatar();
-    avatarInitialized = true;
+    if (statusLabel) statusLabel.textContent = `Online • Ciao, ${name}!`;
+
+    if (!avatarInitialized) {
+      initAvatar3D();
+      resizeAvatar();
+      avatarInitialized = true;
+    }
   }
-}
 
   function showAppForAdmin() {
     window.location.href = "/app/admin.html";
