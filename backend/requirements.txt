@@ -4,5 +4,6 @@ websockets
 python-dotenv
 httpx
 pydantic
+python-jose[cryptography]
 passlib[bcrypt]
 openai
