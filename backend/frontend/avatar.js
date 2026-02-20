@@ -70,7 +70,7 @@ export function initAvatar3D() {
       model.scale.set(scale, scale, scale);
 
       model.position.sub(center.multiplyScalar(scale));
-      model.position.y += 0.4;
+      model.position.y += 0.3;
 
       scene.add(model);
 
