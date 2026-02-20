@@ -263,7 +263,7 @@ function initChat() {
     tabLogin.style.color = "#e5e7eb";
     tabRegister.style.background = "transparent";
     tabRegister.style.color = "#9ca3af";
-    loginExistingPanel.style.display = "block";    // puoi riusarlo come "login"
+    loginExistingPanel.style.display = "block";
     loginRegisterPanel.style.display = "none";
   }
 
@@ -317,12 +317,8 @@ function initChat() {
     showLoginTab();
   }
 
-  // bootstrap iniziale:
-  // per ora non facciamo auto-login dallo USER_KEY,
-  // mostriamo sempre la login (così è pulito).
+  // bootstrap iniziale
   if (isAdminLoggedIn()) {
-    // se vuoi far entrare subito l'admin quando ha token valido:
-    // showAppForAdmin();
     showLogin();
   } else {
     showLogin();
@@ -342,7 +338,7 @@ function initChat() {
       if (!name || !email || !password) return;
 
       try {
-        const res = await fetch(`${BASE_URL}/auth/register`, {
+        const res = await fetch(`${BASE_URL}/api/register`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ name, email, password }),
@@ -360,7 +356,7 @@ function initChat() {
         showAppForUser(user.id, user.name);
         if (inputEl) inputEl.focus();
       } catch (err) {
-        console.error("Errore fetch /auth/register", err);
+        console.error("Errore fetch /api/register", err);
         alert("Errore di rete durante la registrazione.");
       }
     });
@@ -394,7 +390,7 @@ function initChat() {
 
       // Caso utente normale (DB esterno)
       try {
-        const res = await fetch(`${BASE_URL}/auth/login`, {
+        const res = await fetch(`${BASE_URL}/api/login`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ email, password }),
@@ -411,7 +407,7 @@ function initChat() {
         setCurrentUserId(user.id);
         showAppForUser(user.id, user.name);
       } catch (err) {
-        console.error("Errore fetch /auth/login", err);
+        console.error("Errore fetch /api/login", err);
         alert("Errore di rete durante il login.");
       }
     });
@@ -424,7 +420,7 @@ function initChat() {
     });
   }
 
-  // TODO: qui puoi lasciare invariata la logica chat / history / voce che avevi già
+  // (resto logica chat / history / voce)
 }
 
 // --- Overlay login admin (apertura e submit) ---
