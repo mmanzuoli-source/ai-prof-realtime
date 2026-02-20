@@ -5,6 +5,9 @@
     <title>AI Prof Realtime</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="favicon.png" />
+
     <style>
       * {
         box-sizing: border-box;
@@ -356,6 +359,18 @@
         margin: 0 16px;
       }
 
+      /* Logo sopra la finestra di login */
+      .login-logo {
+        display: flex;
+        justify-content: center;
+        margin-bottom: 12px;
+      }
+
+      .login-logo img {
+        max-width: 120px;
+        height: auto;
+      }
+
       .login-box h2 {
         font-size: 20px;
         margin-bottom: 8px;
@@ -531,6 +546,10 @@
     <!-- LOGIN OVERLAY UTENTE -->
     <div id="login-panel">
       <div class="login-box">
+        <div class="login-logo">
+          <img src="logo-prof.png" alt="AI Prof Realtime" />
+        </div>
+
         <h2>Accedi al tuo Tutor</h2>
         <p>Scegli un profilo salvato oppure creane uno nuovo.</p>
 
