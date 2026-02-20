@@ -57,12 +57,8 @@ function initAdminLogin() {
     return;
   }
 
-  // se già loggato, popup rimane chiuso
-  if (isAdminLoggedIn()) {
-    overlay.style.display = "none";
-  } else {
-    overlay.style.display = "none"; // assicura che parta nascosto
-  }
+  // sempre nascosto all'inizio
+  overlay.style.display = "none";
 
   // apertura popup da pulsante nella login utente
   if (openAdminBtn) {
@@ -72,7 +68,7 @@ function initAdminLogin() {
         errorEl.textContent = "";
       }
       overlay.style.display = "flex";
-      if (usernameInput) usernameInput.focus();
+      usernameInput.focus();
     });
   } else {
     console.warn("open-admin-login-btn non trovato nel DOM");
@@ -135,8 +131,6 @@ function initAdminLogin() {
 
       setAdminToken(data.access_token);
       overlay.style.display = "none";
-      // da qui in poi l'app funziona come prima
-
     } catch (err) {
       console.error("Errore login admin:", err);
       if (errorEl) {
@@ -161,10 +155,9 @@ function initAdminLogin() {
 
 // === FINE AUTH ADMIN ===
 
-window.addEventListener("load", () => {
-  initAdminLogin();
-  initChat();
-});
+// avendo lo script a fine <body>, il DOM è pronto: niente load
+initAdminLogin();
+initChat();
 
 window.addEventListener("resize", () => {
   if (avatarInitialized) {
@@ -174,29 +167,24 @@ window.addEventListener("resize", () => {
 
 // --- Gestione voce maschile TTS ---
 
-// Pulisce il testo per la sintesi vocale
 function cleanTextForSpeech(text) {
   if (!text) return "";
 
   let t = String(text);
 
-  // 1) Rimuove blocchi ```json ... ``` o ``` ... ```
   t = t.replace(/```json[\s\S]*?```/gi, "");
   t = t.replace(/```[\s\S]*?```/g, "");
 
-  // 2) Prova a estrarre solo il valore di "testo" se c'è JSON
   const matchTesto = String(text).match(/"testo"\s*:\s*"([\s\S]*?)"/i);
   if (matchTesto && matchTesto[1]) {
     t = matchTesto[1];
   }
 
-  // 3) Rimuove oggetti JSON inline residui e campi di controllo
   t = t.replace(/\{[^}]*"tipo"[^}]*\}/gi, "");
   t = t.replace(/\{[^}]*"score_delta"[^}]*\}/gi, "");
   t = t.replace(/"score_delta"\s*:\s*\d+/gi, "");
   t = t.replace(/score_delta/gi, "");
 
-  // 4) Emoji / shortcode / markdown
   t = t
     .replace(/[\u{1F300}-\u{1F9FF}]/gu, "")
     .replace(/:\w+:/g, "")
@@ -207,7 +195,6 @@ function cleanTextForSpeech(text) {
   return t;
 }
 
-// --- TTS con voce del dispositivo (speechSynthesis) ---
 async function speakText(text) {
   if (!text) return;
 
@@ -220,14 +207,11 @@ async function speakText(text) {
     setTalkingIntensity(1.0);
 
     const t = cleanTextForSpeech(text);
-
-    // ferma eventuali voci già in riproduzione
     window.speechSynthesis.cancel();
 
     const utter = new SpeechSynthesisUtterance(t);
     utter.lang = "it-IT";
 
-    // prova a scegliere una voce maschile/giovanile italiana se disponibile
     const voices = window.speechSynthesis.getVoices();
     const preferred =
       voices.find(
@@ -317,21 +301,17 @@ function initChat() {
   const missionsStreakLabel = document.getElementById("missions-streak-label");
   const logoutBtn = document.getElementById("logout-btn");
 
-  // nuovi campi scuola/materia
   const schoolInput = document.getElementById("school-input");
   const subjectInput = document.getElementById("subject-input");
 
-  // preview modalità ascolto
   const listenPreview = document.getElementById("listen-preview");
   const listenPreviewText = document.getElementById("listen-preview-text");
 
-  // SpeechRecognition
   const SpeechRecognition =
     window.SpeechRecognition || window.webkitSpeechRecognition;
   let recognition = null;
   let micTimeoutId = null;
 
-  // stato modalità ascolto
   let listenModeActive = false;
   let listeningBuffer = "";
 
@@ -342,11 +322,9 @@ function initChat() {
     recognition.interimResults = false;
   }
 
-  // ripristina scuola/materia se salvate
   if (schoolInput && savedState.school) schoolInput.value = savedState.school;
   if (subjectInput && savedState.subject) subjectInput.value = savedState.subject;
 
-  // --- Gestione utenti multipli (localStorage) ---
   function loadUsers() {
     try {
       return JSON.parse(localStorage.getItem(USERS_KEY) || "[]");
@@ -473,7 +451,7 @@ function initChat() {
   function showAppForUserId(id) {
     const user = getUserById(id);
     const name = user ? user.name : "Studente";
-    
+
     if (loginPanel) loginPanel.style.display = "none";
     if (appPanel) appPanel.style.display = "grid";
     if (statusLabel) statusLabel.textContent = `Online • Ciao, ${name}!`;
@@ -500,7 +478,6 @@ function initChat() {
     showLogin();
   }
 
-  // Registrazione nuovo utente
   if (registerBtn && registerNameInput && registerEmailInput && registerPasswordInput) {
     registerBtn.addEventListener("click", () => {
       const name = registerNameInput.value.trim();
@@ -528,7 +505,6 @@ function initChat() {
     });
   }
 
-  // Login utente esistente
   if (loginExistingBtn && loginUserSelect) {
     loginExistingBtn.addEventListener("click", () => {
       const selectedId = loginUserSelect.value;
@@ -539,7 +515,6 @@ function initChat() {
     });
   }
 
-  // Login via email/password
   if (loginEmailBtn && loginEmailInput && loginPasswordInput) {
     loginEmailBtn.addEventListener("click", () => {
       const email = loginEmailInput.value.trim();
@@ -565,7 +540,6 @@ function initChat() {
     });
   }
 
-  // Reset password
   if (
     forgotPasswordLink &&
     forgotPasswordPanel &&
@@ -608,7 +582,6 @@ function initChat() {
     });
   }
 
-  // Logout
   if (logoutBtn) {
     logoutBtn.addEventListener("click", () => {
       if (
@@ -623,7 +596,6 @@ function initChat() {
     });
   }
 
-  // --- Utility date / streak ---
   function getTodayISO() {
     return new Date().toISOString().slice(0, 10);
   }
@@ -681,7 +653,6 @@ function initChat() {
     return `Streak: ${streak} giorni`;
   }
 
-  // --- Missioni + gamification per argomento ---
   function loadMissions() {
     try {
       const raw = localStorage.getItem(MISSIONS_KEY);
@@ -793,7 +764,6 @@ function initChat() {
     });
   }
 
-  // --- Stato XP / history ---
   function saveState() {
     const school = schoolInput ? schoolInput.value : "";
     const subject = subjectInput ? subjectInput.value : "";
@@ -1005,8 +975,6 @@ function initChat() {
     }
   }
 
-  // --- Modalità ascolto ---
-
   function enterListenMode() {
     if (!recognition) return;
     listenModeActive = true;
@@ -1053,7 +1021,6 @@ function initChat() {
     sendMessage();
   }
 
-  // --- Eventi chat ---
   if (sendBtn) {
     sendBtn.addEventListener("click", () => {
       sendMessage();
@@ -1069,7 +1036,6 @@ function initChat() {
     });
   }
 
-  // --- Cronologia ---
   if (historyBtn && historyPanel) {
     historyBtn.addEventListener("click", () => {
       const vis = historyPanel.style.display === "block";
@@ -1090,9 +1056,7 @@ function initChat() {
     });
   }
 
-  // --- Voce: bottoni controllo TTS e microfono / ascolto ---
   if (recognition) {
-    // mic normale
     if (micBtn) {
       micBtn.addEventListener("click", () => {
         if (listenModeActive) {
@@ -1120,7 +1084,6 @@ function initChat() {
       });
     }
 
-    // bottone modalità ascolto
     if (listenModeBtn) {
       listenModeBtn.addEventListener("click", () => {
         if (!listenModeActive) {
@@ -1147,7 +1110,6 @@ function initChat() {
     };
 
     recognition.onresult = (event) => {
-      // accumula solo i pezzi finali nuovi
       let finalChunk = "";
 
       for (let i = event.resultIndex; i < event.results.length; i++) {
@@ -1211,7 +1173,6 @@ function initChat() {
     });
   }
 
-  // salva quando cambi scuola/materia
   if (schoolInput) {
     schoolInput.addEventListener("change", saveState);
   }
@@ -1219,7 +1180,6 @@ function initChat() {
     subjectInput.addEventListener("change", saveState);
   }
 
-  // --- Init finale ---
   updateUI();
   renderMissions();
 }
