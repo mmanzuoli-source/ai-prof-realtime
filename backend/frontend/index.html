@@ -24,6 +24,7 @@
         padding: 16px;
       }
 
+      /* MOBILE-FIRST: colonna */
       .app-shell {
         display: flex;
         flex-direction: column;
@@ -122,10 +123,23 @@
         scrollbar-color: #374151 #020617;
       }
 
-      #messages::-webkit-scrollbar { width: 8px; }
-      #messages::-webkit-scrollbar-track { background: #020617; border-radius: 8px; }
-      #messages::-webkit-scrollbar-thumb { background: #374151; border-radius: 8px; }
-      #messages::-webkit-scrollbar-thumb:hover { background: #4b5563; }
+      #messages::-webkit-scrollbar {
+        width: 8px;
+      }
+
+      #messages::-webkit-scrollbar-track {
+        background: #020617;
+        border-radius: 8px;
+      }
+
+      #messages::-webkit-scrollbar-thumb {
+        background: #374151;
+        border-radius: 8px;
+      }
+
+      #messages::-webkit-scrollbar-thumb:hover {
+        background: #4b5563;
+      }
 
       .msg {
         padding: 8px 10px;
@@ -168,7 +182,9 @@
         font-size: 14px;
       }
 
-      #user-input::placeholder { color: #6b7280; }
+      #user-input::placeholder {
+        color: #6b7280;
+      }
 
       .input-buttons {
         display: flex;
@@ -197,7 +213,10 @@
         font-weight: 500;
       }
 
-      #send-btn:disabled { opacity: 0.5; cursor: default; }
+      #send-btn:disabled {
+        opacity: 0.5;
+        cursor: default;
+      }
 
       .hud-bottom {
         display: flex;
@@ -241,8 +260,13 @@
         display: none;
       }
 
-      #history-summary-text { margin-bottom: 4px; }
-      #history-content { margin-bottom: 8px; }
+      #history-summary-text {
+        margin-bottom: 4px;
+      }
+
+      #history-content {
+        margin-bottom: 8px;
+      }
 
       #clear-history-btn {
         border-radius: 999px;
@@ -279,7 +303,11 @@
         font-size: 13px;
       }
 
-      .mission-item { display: flex; align-items: center; gap: 8px; }
+      .mission-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
 
       .mission-dot {
         width: 10px;
@@ -289,14 +317,25 @@
         background: #020617;
       }
 
-      .mission-dot.completed { background: #22c55e; border-color: #16a34a; }
-      .mission-progress { font-size: 11px; color: #9ca3af; }
+      .mission-dot.completed {
+        background: #22c55e;
+        border-color: #16a34a;
+      }
+
+      .mission-progress {
+        font-size: 11px;
+        color: #9ca3af;
+      }
 
       /* Overlay login UTENTE */
       #login-panel {
         position: fixed;
         inset: 0;
-        background: radial-gradient(circle at top, rgba(15, 23, 42, 0.98), #020617);
+        background: radial-gradient(
+          circle at top,
+          rgba(15, 23, 42, 0.98),
+          #020617
+        );
         display: flex;
         justify-content: center;
         align-items: center;
@@ -313,7 +352,10 @@
         box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
       }
 
-      .login-box h2 { font-size: 20px; margin-bottom: 8px; }
+      .login-box h2 {
+        font-size: 20px;
+        margin-bottom: 8px;
+      }
 
       .login-box p {
         font-size: 13px;
@@ -349,24 +391,133 @@
         margin-top: 4px;
       }
 
-      .login-subtext span { color: #93c5fd; }
+      .login-subtext span {
+        color: #93c5fd;
+      }
+
+      /* Overlay LOGIN ADMIN */
+      #admin-login-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(15, 23, 42, 0.9);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        z-index: 100;
+      }
+
+      .admin-login-box {
+        background: #020617;
+        border-radius: 16px;
+        padding: 24px 28px;
+        max-width: 360px;
+        width: 100%;
+        color: #e5e7eb;
+        box-shadow: 0 20px 40px rgba(15, 23, 42, 0.7);
+        border: 1px solid #1f2937;
+      }
+
+      .admin-login-box h2 {
+        margin-top: 0;
+        margin-bottom: 8px;
+        font-size: 20px;
+      }
+
+      .admin-login-box p {
+        font-size: 13px;
+        color: #9ca3af;
+        margin-bottom: 16px;
+      }
+
+      .admin-login-box input {
+        width: 100%;
+        padding: 10px 12px;
+        border-radius: 999px;
+        border: 1px solid #1f2937;
+        background: #020617;
+        color: #e5e7eb;
+        font-size: 14px;
+        margin-bottom: 10px;
+      }
+
+      .admin-login-box button {
+        width: 100%;
+        border-radius: 999px;
+        border: none;
+        padding: 10px 12px;
+        font-size: 14px;
+        cursor: pointer;
+        font-weight: 500;
+        background: #2563eb;
+        color: #f9fafb;
+      }
+
+      .admin-login-error {
+        color: #f97373;
+        margin-top: 8px;
+        font-size: 12px;
+      }
 
       /* DESKTOP/TABLET: due colonne */
       @media (min-width: 900px) {
-        body { padding: 24px; }
+        body {
+          padding: 24px;
+        }
 
-        .app-shell { flex-direction: row; gap: 24px; }
+        .app-shell {
+          flex-direction: row;
+          gap: 24px;
+        }
 
-        .left-pane { flex: 0 0 40%; }
+        .left-pane {
+          flex: 0 0 40%;
+        }
 
-        .right-pane { flex: 1 1 60%; min-height: 600px; }
+        .right-pane {
+          flex: 1 1 60%;
+          min-height: 600px;
+        }
 
-        #avatar-3d { height: 480px; }
+        #avatar-3d {
+          height: 480px;
+        }
       }
     </style>
   </head>
 
   <body>
+    <!-- LOGIN ADMIN OVERLAY -->
+    <div id="admin-login-overlay">
+      <div class="admin-login-box">
+        <h2>Login amministratore</h2>
+        <p>Inserisci le credenziali admin per gestire l'app.</p>
+
+        <label for="admin-username">Username</label>
+        <input
+          id="admin-username"
+          type="text"
+          autocomplete="username"
+          value="Admin"
+        />
+
+        <label for="admin-password">Password</label>
+        <input
+          id="admin-password"
+          type="password"
+          autocomplete="current-password"
+        />
+
+        <button id="admin-login-btn" type="button">
+          Entra come admin
+        </button>
+
+        <p
+          id="admin-login-error"
+          class="admin-login-error"
+          style="display: none;"
+        ></p>
+      </div>
+    </div>
 
     <!-- LOGIN OVERLAY UTENTE -->
     <div id="login-panel">
@@ -378,11 +529,11 @@
         <div
           class="login-tabs"
           style="
-            display:flex;
-            margin-bottom:12px;
-            border-radius:999px;
-            border:1px solid #1f2937;
-            overflow:hidden;
+            display: flex;
+            margin-bottom: 12px;
+            border-radius: 999px;
+            border: 1px solid #1f2937;
+            overflow: hidden;
           "
         >
           <button
@@ -390,13 +541,13 @@
             class="login-tab active"
             type="button"
             style="
-              flex:1;
-              padding:8px 0;
-              border:none;
-              background:#111827;
-              color:#e5e7eb;
-              font-size:13px;
-              cursor:pointer;
+              flex: 1;
+              padding: 8px 0;
+              border: none;
+              background: #111827;
+              color: #e5e7eb;
+              font-size: 13px;
+              cursor: pointer;
             "
           >
             Ho già un account
@@ -406,13 +557,13 @@
             class="login-tab"
             type="button"
             style="
-              flex:1;
-              padding:8px 0;
-              border:none;
-              background:transparent;
-              color:#9ca3af;
-              font-size:13px;
-              cursor:pointer;
+              flex: 1;
+              padding: 8px 0;
+              border: none;
+              background: transparent;
+              color: #9ca3af;
+              font-size: 13px;
+              cursor: pointer;
             "
           >
             Sono nuovo
@@ -423,74 +574,113 @@
         <div id="login-existing">
           <label
             for="login-user-select"
-            style="font-size:13px;color:#9ca3af;margin-bottom:4px;display:block;"
+            class="login-label"
+            style="
+              font-size: 13px;
+              color: #9ca3af;
+              margin-bottom: 4px;
+              display: block;
+            "
           >
             Scegli il tuo profilo
           </label>
           <select
             id="login-user-select"
             style="
-              width:100%;
-              padding:10px 12px;
-              border-radius:999px;
-              border:1px solid #1f2937;
-              background:#020617;
-              color:#e5e7eb;
-              font-size:14px;
-              margin-bottom:12px;
+              width: 100%;
+              padding: 10px 12px;
+              border-radius: 999px;
+              border: 1px solid #1f2937;
+              background: #020617;
+              color: #e5e7eb;
+              font-size: 14px;
+              margin-bottom: 12px;
             "
           >
             <option value="">Nessun profilo salvato</option>
           </select>
           <button id="login-existing-btn" disabled>Entra</button>
 
-          <div style="margin:10px 0 6px;font-size:11px;color:#6b7280;text-align:center;">
+          <!-- Divider -->
+          <div
+            style="
+              margin: 10px 0 6px;
+              font-size: 11px;
+              color: #6b7280;
+              text-align: center;
+            "
+          >
             oppure accedi con email e password
           </div>
 
+          <!-- Login via email/password -->
           <input
             type="email"
             id="login-email"
             placeholder="nome@scuola.it"
             autocomplete="email"
-            style="margin-bottom:6px;"
+            style="margin-bottom: 6px;"
           />
           <input
             type="password"
             id="login-password"
             placeholder="Password"
             autocomplete="current-password"
-            style="margin-bottom:8px;"
+            style="margin-bottom: 8px;"
           />
-          <button id="login-email-btn" type="button" style="margin-bottom:4px;">
+          <button
+            id="login-email-btn"
+            type="button"
+            style="margin-bottom: 4px;"
+          >
             Accedi
           </button>
 
-          <div style="margin-top:4px;font-size:12px;color:#9ca3af;text-align:right;">
+          <!-- Link reset password -->
+          <div
+            style="
+              margin-top: 4px;
+              font-size: 12px;
+              color: #9ca3af;
+              text-align: right;
+            "
+          >
             <button
               id="forgot-password-link"
               type="button"
               style="
-                background:none;
-                border:none;
-                color:#60a5fa;
-                cursor:pointer;
-                padding:0;
-                font-size:12px;
-                text-decoration:underline;
+                background: none;
+                border: none;
+                color: #60a5fa;
+                cursor: pointer;
+                padding: 0;
+                font-size: 12px;
+                text-decoration: underline;
               "
             >
               Ho dimenticato la password
             </button>
           </div>
 
+          <!-- Mini form reset password (nascosto) -->
           <div
             id="forgot-password-panel"
-            style="display:none;margin-top:10px;padding-top:8px;border-top:1px solid #111827;"
+            style="
+              display: none;
+              margin-top: 10px;
+              padding-top: 8px;
+              border-top: 1px solid #111827;
+            "
           >
             <label
               for="forgot-email"
-              style="font-size:12px;color:#9ca3af;margin-bottom:4px;display:block;"
+              class="login-label"
+              style="
+                font-size: 12px;
+                color: #9ca3af;
+                margin-bottom: 4px;
+                display: block;
+              "
             >
               Email del profilo
             </label>
@@ -499,8 +689,335 @@
               id="forgot-email"
               placeholder="nome@scuola.it"
               autocomplete="email"
-              style="margin-bottom:6px;"
+              style="margin-bottom: 6px;"
             />
+
             <label
               for="forgot-password"
-              style="font-
+              class="login-label"
+              style="
+                font-size: 12px;
+                color: #9ca3af;
+                margin-bottom: 4px;
+                display: block;
+              "
+            >
+              Nuova password
+            </label>
+            <input
+              type="password"
+              id="forgot-password"
+              placeholder="Nuova password"
+              autocomplete="new-password"
+              style="margin-bottom: 6px;"
+            />
+
+            <button
+              id="forgot-password-btn"
+              type="button"
+              style="width: 100%; margin-top: 4px;"
+            >
+              Reimposta password
+            </button>
+          </div>
+        </div>
+
+        <!-- REGISTRAZIONE NUOVO UTENTE -->
+        <div id="login-register" style="display: none;">
+          <label
+            for="register-name"
+            class="login-label"
+            style="
+              font-size: 13px;
+              color: #9ca3af;
+              margin-bottom: 4px;
+              display: block;
+            "
+          >
+            Come ti chiami?
+          </label>
+          <input
+            type="text"
+            id="register-name"
+            placeholder="Il tuo nome"
+            autocomplete="name"
+          />
+
+          <label
+            for="register-email"
+            class="login-label"
+            style="
+              font-size: 13px;
+              color: #9ca3af;
+              margin-bottom: 4px;
+              margin-top: 4px;
+              display: block;
+            "
+          >
+            Email
+          </label>
+          <input
+            type="email"
+            id="register-email"
+            placeholder="nome@scuola.it"
+            autocomplete="email"
+          />
+
+          <label
+            for="register-password"
+            class="login-label"
+            style="
+              font-size: 13px;
+              color: #9ca3af;
+              margin-bottom: 4px;
+              margin-top: 4px;
+              display: block;
+            "
+          >
+            Password
+          </label>
+          <input
+            type="password"
+            id="register-password"
+            placeholder="Scegli una password"
+            autocomplete="new-password"
+          />
+
+          <button id="register-btn">Crea profilo</button>
+        </div>
+
+        <div class="login-subtext">
+          I tuoi punti e la cronologia restano salvati su questo dispositivo.
+        </div>
+
+        <!-- Pulsante accesso admin -->
+        <div style="margin-top: 8px; text-align: center;">
+          <button
+            id="open-admin-login-btn"
+            type="button"
+            style="
+              background: none;
+              border: none;
+              color: #60a5fa;
+              cursor: pointer;
+              font-size: 12px;
+              text-decoration: underline;
+            "
+          >
+            Accesso amministratore
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- APP PRINCIPALE -->
+    <div class="app-shell" id="app-panel">
+      <section class="left-pane">
+        <div id="avatar-3d"></div>
+
+        <div class="panel">
+          <div id="history-panel">
+            <div id="history-summary-text">
+              Nessuna cronologia disponibile.
+            </div>
+            <div id="history-content"></div>
+            <button id="clear-history-btn">Pulisci cronologia</button>
+            <div id="last-session-summary"></div>
+          </div>
+
+          <div class="missions-panel">
+            <div id="missions-streak-label">Nessuna streak</div>
+            <div id="missions-list"></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="right-pane">
+        <div class="panel">
+          <div class="hud-top">
+            <div
+              style="
+                display: flex;
+                flex-direction: column;
+                gap: 4px;
+                min-width: 0;
+              "
+            >
+              <div
+                style="
+                  display: flex;
+                  flex-wrap: wrap;
+                  gap: 6px;
+                  font-size: 12px;
+                  color: #9ca3af;
+                "
+              >
+                <div
+                  style="
+                    display: flex;
+                    align-items: center;
+                    gap: 4px;
+                    min-width: 0;
+                  "
+                >
+                  <span>Scuola:</span>
+                  <input
+                    id="school-input"
+                    type="text"
+                    placeholder="es. Prima media"
+                    style="
+                      flex: 1;
+                      min-width: 80px;
+                      max-width: 140px;
+                      padding: 2px 6px;
+                      border-radius: 999px;
+                      border: 1px solid #1f2937;
+                      background: #020617;
+                      color: #e5e7eb;
+                      font-size: 11px;
+                    "
+                  />
+                </div>
+                <div
+                  style="
+                    display: flex;
+                    align-items: center;
+                    gap: 4px;
+                    min-width: 0;
+                  "
+                >
+                  <span>Materia:</span>
+                  <input
+                    id="subject-input"
+                    type="text"
+                    placeholder="es. Storia"
+                    style="
+                      flex: 1;
+                      min-width: 80px;
+                      max-width: 120px;
+                      padding: 2px 6px;
+                      border-radius: 999px;
+                      border: 1px solid #1f2937;
+                      background: #020617;
+                      color: #e5e7eb;
+                      font-size: 11px;
+                    "
+                  />
+                </div>
+              </div>
+              <div>
+                <div id="score-label">XP: 0</div>
+                <div id="level-label" style="font-size: 12px; color: #9ca3af;">
+                  Livello 1 • Novizio
+                </div>
+              </div>
+            </div>
+            <div class="xp-wrapper">
+              <span style="font-size: 12px;">Progresso</span>
+              <div class="xp-bar-wrap">
+                <div id="xp-bar"></div>
+              </div>
+            </div>
+          </div>
+
+          <div id="messages"></div>
+
+          <!-- Box anteprima modalità ascolto -->
+          <div
+            id="listen-preview"
+            style="
+              display: none;
+              margin-top: 8px;
+              font-size: 12px;
+              color: #9ca3af;
+              padding: 8px;
+              border-radius: 10px;
+              border: 1px solid #1f2937;
+              background: #020617;
+              max-height: 80px;
+              overflow-y: auto;
+            "
+          >
+            <strong>Testo in modalità ascolto:</strong>
+            <span id="listen-preview-text"></span>
+          </div>
+
+          <div class="input-row">
+            <input
+              id="user-input"
+              type="text"
+              placeholder="Scrivi al tuo prof AI..."
+              autocomplete="off"
+            />
+            <div class="input-buttons">
+              <button
+                id="mic-btn"
+                class="round-btn"
+                title="Detta al prof"
+              >
+                🎤
+              </button>
+
+              <button
+                id="listen-mode-btn"
+                class="round-btn"
+                title="Modalità ascolto (lettura e ripetizione)"
+              >
+                👂
+              </button>
+
+              <button
+                id="play-voice-btn"
+                class="round-btn"
+                title="Riprendi la voce"
+              >
+                ▶️
+              </button>
+              <button
+                id="pause-voice-btn"
+                class="round-btn"
+                title="Metti in pausa la voce"
+              >
+                ⏸️
+              </button>
+              <button
+                id="stop-voice-btn"
+                class="round-btn"
+                title="Ferma la voce"
+              >
+                ⏹️
+              </button>
+
+              <button id="send-btn" class="round-btn">Invia</button>
+            </div>
+          </div>
+
+          <div class="hud-bottom">
+            <span id="status-label">Offline</span>
+            <div style="display: flex; gap: 8px; align-items: center;">
+              <button id="history-btn">Cronologia</button>
+              <button id="logout-btn">Logout</button>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+          "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+        }
+      }
+    </script>
+
+    <script type="module">
+      import * as THREE from "three";
+      window.THREE = THREE;
+    </script>
+
+    <script type="module" src="/app/avatar.js"></script>
+    <script type="module" src="/app/main.v2.fix.js"></script>
+  </body>
+</html>
