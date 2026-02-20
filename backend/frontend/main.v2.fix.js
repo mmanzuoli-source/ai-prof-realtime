@@ -44,6 +44,26 @@ async function adminFetch(path, options = {}) {
   return fetch(url, { ...options, headers });
 }
 
+// login admin via backend OAuth2
+async function loginAdminWithPassword(password) {
+  const formData = new FormData();
+  formData.append("username", "Admin");
+  formData.append("password", password);
+  formData.append("grant_type", "password");
+
+  const res = await fetch(`${BASE_URL}/auth/admin/login`, {
+    method: "POST",
+    body: formData,
+  });
+
+  if (!res.ok) {
+    throw new Error("Login admin fallito");
+  }
+
+  const data = await res.json();
+  setAdminToken(data.access_token);
+}
+
 // === FINE AUTH ADMIN ===
 
 initChat();
@@ -353,25 +373,17 @@ function initChat() {
   }
 
   function showAppForAdmin() {
-    if (loginPanel) loginPanel.style.display = "none";
-    if (appPanel) appPanel.style.display = "grid";
-    if (statusLabel) statusLabel.textContent = "Online • Amministratore";
-
-    if (!avatarInitialized) {
-      initAvatar3D();
-      resizeAvatar();
-      avatarInitialized = true;
-    }
+    // già loggato come admin → manda alla dashboard
+    window.location.href = "/app/admin.html";
   }
 
   function showLogin() {
+    if (loginPanel) loginPanel.style.display = "block";
     if (appPanel) appPanel.style.display = "none";
-    if (loginPanel) loginPanel.style.display = "flex";
-    if (statusLabel) statusLabel.textContent = "Offline";
-    refreshUserSelect();
     showLoginTab();
   }
 
+  // bootstrap iniziale
   const existingUserId = getCurrentUserId();
   if (existingUserId && getUserById(existingUserId)) {
     showAppForUserId(existingUserId);
@@ -381,7 +393,13 @@ function initChat() {
     showLogin();
   }
 
-  if (registerBtn && registerNameInput && registerEmailInput && registerPasswordInput) {
+  // --- Registrazione utente normale ---
+  if (
+    registerBtn &&
+    registerNameInput &&
+    registerEmailInput &&
+    registerPasswordInput
+  ) {
     registerBtn.addEventListener("click", () => {
       const name = registerNameInput.value.trim();
       const email = registerEmailInput.value.trim();
@@ -408,9 +426,53 @@ function initChat() {
     });
   }
 
+  // --- Login da profilo salvato ---
   if (loginExistingBtn && loginUserSelect) {
     loginExistingBtn.addEventListener("click", () => {
       const selectedId = loginUserSelect.value;
       if (!selectedId) return;
       setCurrentUserId(selectedId);
       showAppForUserId(selectedId);
+    });
+  }
+
+  // --- Login via email/password (Admin + utenti locali) ---
+  if (loginEmailBtn && loginEmailInput && loginPasswordInput) {
+    loginEmailBtn.addEventListener("click", async () => {
+      const email = (loginEmailInput.value || "").trim();
+      const password = (loginPasswordInput.value || "").trim();
+      if (!email || !password) return;
+
+      // Caso ADMIN
+      if (email.toLowerCase() === "admin") {
+        try {
+          await loginAdminWithPassword(password); // chiama backend e salva token
+          showAppForAdmin();
+        } catch (e) {
+          console.error(e);
+          alert("Login Admin non riuscito");
+        }
+        return;
+      }
+
+      // Caso utente normale (profilo locale)
+      const user = getUserByEmailAndPassword(email, password);
+      if (!user) {
+        alert("Credenziali non valide");
+        return;
+      }
+      setCurrentUserId(user.id);
+      showAppForUserId(user.id);
+    });
+
+    loginPasswordInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        loginEmailBtn.click();
+      }
+    });
+  }
+
+  // (da qui in giù resta la tua logica di chat, storia, missioni, microfono, ecc.)
+  // ...
+}
