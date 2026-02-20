@@ -72,7 +72,7 @@ export function initAvatar3D() {
 
       // CENTRA IL MODELLO E POI ALZALO
       model.position.sub(center.multiplyScalar(scale));
-      model.position.y += 0.6;              // prima 0.3
+      model.position.y += 0.2;              // prima 0.3
 
       scene.add(model);
 
