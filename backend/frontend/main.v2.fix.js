@@ -3,13 +3,13 @@ import { initAvatar3D, resizeAvatar, setTalkingIntensity } from "./avatar.js";
 
 let avatarInitialized = false;
 
-// URL backend
+// URL backend (ti servirà per la chat, non per il login)
 const BASE_URL =
   window.location.hostname === "localhost"
     ? "http://localhost:8000"
     : "https://www.aiprofrealtime.com";
 
-// === AUTH ADMIN (JWT) ===
+// === AUTH ADMIN (disponibile, ma non usata per entrare nell'app) ===
 const ADMIN_TOKEN_KEY = "ai_prof_admin_token";
 
 function getAdminToken() {
@@ -22,10 +22,6 @@ function setAdminToken(token) {
   } else {
     window.localStorage.removeItem(ADMIN_TOKEN_KEY);
   }
-}
-
-function isAdminLoggedIn() {
-  return !!getAdminToken();
 }
 
 async function adminFetch(path, options = {}) {
@@ -44,7 +40,6 @@ async function adminFetch(path, options = {}) {
   return fetch(url, { ...options, headers });
 }
 
-// login admin via backend OAuth2
 async function loginAdminWithPassword(password) {
   const formData = new FormData();
   formData.append("username", "Admin");
@@ -159,7 +154,7 @@ function initChat() {
   if (typeof savedState.points === "number") points = savedState.points;
   if (typeof savedState.level === "number") level = savedState.level;
 
-  const USER_KEY = "tutorUserId"; // solo ultimo utente loggato, non lista utenti
+  const USER_KEY = "tutorUserId"; // non lo usiamo più per gestire login
   const HISTORY_KEY = "tutorHistory";
   const STREAK_KEY = "tutorStreak";
   const MISSIONS_KEY = "tutorMissions";
@@ -231,28 +226,7 @@ function initChat() {
   if (schoolInput && savedState.school) schoolInput.value = savedState.school;
   if (subjectInput && savedState.subject) subjectInput.value = savedState.subject;
 
-  // --- Solo ID utente corrente in localStorage ---
-  function getCurrentUserId() {
-    try {
-      return localStorage.getItem(USER_KEY) || null;
-    } catch {
-      return null;
-    }
-  }
-
-  function setCurrentUserId(id) {
-    try {
-      localStorage.setItem(USER_KEY, id);
-    } catch {}
-  }
-
-  function clearCurrentUserId() {
-    try {
-      localStorage.removeItem(USER_KEY);
-    } catch {}
-  }
-
-  // --- Tab login / registrazione (solo UI) ---
+  // --- Tab login / registrazione (UI ancora presente ma non blocca) ---
 
   function showLoginTab() {
     if (!tabLogin || !tabRegister || !loginExistingPanel || !loginRegisterPanel)
@@ -285,7 +259,7 @@ function initChat() {
     tabRegister.addEventListener("click", showRegisterTab);
   }
 
-  // --- Mostra app una volta che il backend ha validato l'utente ---
+  // --- Mostra app (avatar + chat) ---
   function showAppForUser(id, name) {
     console.log("showAppForUser", { id, name });
 
@@ -311,24 +285,16 @@ function initChat() {
     window.location.href = "/app/admin.html";
   }
 
-  function showLogin() {
-    // per ora non mostriamo il pannello login: entriamo diretti nell'app
-    if (loginPanel) loginPanel.style.display = "none";
-    if (appPanel) appPanel.style.display = "block";
-  }
-
-  // --- AVVIO DIRETTO SENZA LOGIN (temporaneo) ---
-  function autoStartWithoutLogin() {
+  // --- AVVIO DIRETTO SENZA LOGIN ---
+  (function autoStartWithoutLogin() {
     const fakeUserId = "local-user";
     const fakeName = "Studente";
     showAppForUser(fakeUserId, fakeName);
-  }
+  })();
 
-  // bootstrap iniziale
-  showLogin();
-  autoStartWithoutLogin();
+  // --- Registrazione / login backend (lasciati ma NON necessari per entrare) ---
 
-  // --- Registrazione utente via backend (ancora disponibile ma non obbligatoria) ---
+  // Se vuoi, puoi commentare TUTTO da qui in giù relativo a register/login.
   if (
     registerBtn &&
     registerNameInput &&
@@ -373,14 +339,12 @@ function initChat() {
     });
   }
 
-  // --- Login via email/password (Admin + utenti DB esterno) ---
   if (loginEmailBtn && loginEmailInput && loginPasswordInput) {
     loginEmailBtn.addEventListener("click", async () => {
       const email = (loginEmailInput.value || "").trim();
       const password = (loginPasswordInput.value || "").trim();
       if (!email || !password) return;
 
-      // Caso ADMIN
       if (email.toLowerCase() === "admin") {
         try {
           await loginAdminWithPassword(password);
@@ -392,7 +356,6 @@ function initChat() {
         return;
       }
 
-      // Caso utente normale (DB esterno)
       try {
         const res = await fetch(`${BASE_URL}/api/login`, {
           method: "POST",
