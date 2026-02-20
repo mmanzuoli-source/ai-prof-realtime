@@ -159,8 +159,7 @@ function initChat() {
   if (typeof savedState.points === "number") points = savedState.points;
   if (typeof savedState.level === "number") level = savedState.level;
 
-  const USER_KEY = "tutorUserId";
-  const USERS_KEY = "tutorUsers";
+  const USER_KEY = "tutorUserId"; // solo ultimo utente loggato, non lista utenti
   const HISTORY_KEY = "tutorHistory";
   const STREAK_KEY = "tutorStreak";
   const MISSIONS_KEY = "tutorMissions";
@@ -172,8 +171,6 @@ function initChat() {
   const tabRegister = document.getElementById("tab-register");
   const loginExistingPanel = document.getElementById("login-existing");
   const loginRegisterPanel = document.getElementById("login-register");
-  const loginUserSelect = document.getElementById("login-user-select");
-  const loginExistingBtn = document.getElementById("login-existing-btn");
   const loginEmailInput = document.getElementById("login-email");
   const loginPasswordInput = document.getElementById("login-password");
   const loginEmailBtn = document.getElementById("login-email-btn");
@@ -234,18 +231,7 @@ function initChat() {
   if (schoolInput && savedState.school) schoolInput.value = savedState.school;
   if (subjectInput && savedState.subject) subjectInput.value = savedState.subject;
 
-  function loadUsers() {
-    try {
-      return JSON.parse(localStorage.getItem(USERS_KEY) || "[]");
-    } catch {
-      return [];
-    }
-  }
-
-  function saveUsers(users) {
-    localStorage.setItem(USERS_KEY, JSON.stringify(users));
-  }
-
+  // --- Solo ID utente corrente in localStorage ---
   function getCurrentUserId() {
     try {
       return localStorage.getItem(USER_KEY) || null;
@@ -266,65 +252,7 @@ function initChat() {
     } catch {}
   }
 
-  function getUserById(id) {
-    const users = loadUsers();
-    return users.find((u) => u.id === id) || null;
-  }
-
-  function getUserByEmailAndPassword(email, password) {
-    const users = loadUsers();
-    return (
-      users.find(
-        (u) =>
-          (u.email || "").toLowerCase() === email.toLowerCase() &&
-          u.password === password
-      ) || null
-    );
-  }
-
-  function createUser(name, email, password) {
-    const users = loadUsers();
-    const id = Date.now().toString();
-    users.push({ id, name, email, password, createdAt: Date.now() });
-    saveUsers(users);
-    return { id, name, email };
-  }
-
-  function resetUserPasswordByEmail(email, newPassword) {
-    if (!email || !newPassword) return false;
-    const users = loadUsers();
-    const idx = users.findIndex(
-      (u) => (u.email || "").toLowerCase() === email.toLowerCase()
-    );
-    if (idx === -1) return false;
-
-    users[idx].password = newPassword;
-    saveUsers(users);
-    return true;
-  }
-
-  function refreshUserSelect() {
-    if (!loginUserSelect || !loginExistingBtn) return;
-    const users = loadUsers();
-    loginUserSelect.innerHTML = "";
-
-    if (users.length === 0) {
-      const opt = document.createElement("option");
-      opt.value = "";
-      opt.textContent = "Nessun profilo salvato";
-      loginUserSelect.appendChild(opt);
-      loginExistingBtn.disabled = true;
-      return;
-    }
-
-    users.forEach((u) => {
-      const opt = document.createElement("option");
-      opt.value = u.id;
-      opt.textContent = `${u.name} (${u.email || "senza email"})`;
-      loginUserSelect.appendChild(opt);
-    });
-    loginExistingBtn.disabled = false;
-  }
+  // --- Tab login / registrazione (solo UI) ---
 
   function showLoginTab() {
     if (!tabLogin || !tabRegister || !loginExistingPanel || !loginRegisterPanel)
@@ -335,7 +263,7 @@ function initChat() {
     tabLogin.style.color = "#e5e7eb";
     tabRegister.style.background = "transparent";
     tabRegister.style.color = "#9ca3af";
-    loginExistingPanel.style.display = "block";
+    loginExistingPanel.style.display = "block";    // puoi riusarlo come "login"
     loginRegisterPanel.style.display = "none";
   }
 
@@ -357,12 +285,9 @@ function initChat() {
     tabRegister.addEventListener("click", showRegisterTab);
   }
 
-  // --- QUI LA FUNZIONE MODIFICATA ---
-  function showAppForUserId(id) {
-    const user = getUserById(id);
-    const name = user ? user.name : "Studente";
-
-    console.log("showAppForUserId", { id, user });
+  // --- Mostra app una volta che il backend ha validato l'utente ---
+  function showAppForUser(id, name) {
+    console.log("showAppForUser", { id, name });
 
     if (loginPanel) {
       loginPanel.style.display = "none";
@@ -372,7 +297,7 @@ function initChat() {
     }
 
     if (statusLabel) {
-      statusLabel.textContent = `Online • Ciao, ${name}!`;
+      statusLabel.textContent = `Online • Ciao, ${name || "Studente"}!`;
     }
 
     if (!avatarInitialized) {
@@ -392,39 +317,52 @@ function initChat() {
     showLoginTab();
   }
 
-  // bootstrap iniziale
-  const existingUserId = getCurrentUserId();
-  if (existingUserId && getUserById(existingUserId)) {
-    showAppForUserId(existingUserId);
-  } else if (isAdminLoggedIn()) {
-    showAppForAdmin();
+  // bootstrap iniziale:
+  // per ora non facciamo auto-login dallo USER_KEY,
+  // mostriamo sempre la login (così è pulito).
+  if (isAdminLoggedIn()) {
+    // se vuoi far entrare subito l'admin quando ha token valido:
+    // showAppForAdmin();
+    showLogin();
   } else {
     showLogin();
   }
 
-  // --- Registrazione utente normale ---
+  // --- Registrazione utente via backend ---
   if (
     registerBtn &&
     registerNameInput &&
     registerEmailInput &&
     registerPasswordInput
   ) {
-    registerBtn.addEventListener("click", () => {
+    registerBtn.addEventListener("click", async () => {
       const name = registerNameInput.value.trim();
       const email = registerEmailInput.value.trim();
       const password = registerPasswordInput.value.trim();
       if (!name || !email || !password) return;
 
-      const users = loadUsers();
-      if (users.some((u) => u.email === email)) {
-        alert("Esiste già un profilo con questa email.");
-        return;
-      }
+      try {
+        const res = await fetch(`${BASE_URL}/auth/register`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name, email, password }),
+        });
 
-      const user = createUser(name, email, password);
-      setCurrentUserId(user.id);
-      showAppForUserId(user.id);
-      if (inputEl) inputEl.focus();
+        if (!res.ok) {
+          const errText = await res.text();
+          console.error("Errore registrazione:", errText);
+          alert("Registrazione non riuscita.");
+          return;
+        }
+
+        const user = await res.json(); // { id, name, email }
+        setCurrentUserId(user.id);
+        showAppForUser(user.id, user.name);
+        if (inputEl) inputEl.focus();
+      } catch (err) {
+        console.error("Errore fetch /auth/register", err);
+        alert("Errore di rete durante la registrazione.");
+      }
     });
 
     registerPasswordInput.addEventListener("keydown", (e) => {
@@ -435,17 +373,7 @@ function initChat() {
     });
   }
 
-  // --- Login da profilo salvato ---
-  if (loginExistingBtn && loginUserSelect) {
-    loginExistingBtn.addEventListener("click", () => {
-      const selectedId = loginUserSelect.value;
-      if (!selectedId) return;
-      setCurrentUserId(selectedId);
-      showAppForUserId(selectedId);
-    });
-  }
-
-  // --- Login via email/password (Admin + utenti locali) ---
+  // --- Login via email/password (Admin + utenti DB esterno) ---
   if (loginEmailBtn && loginEmailInput && loginPasswordInput) {
     loginEmailBtn.addEventListener("click", async () => {
       const email = (loginEmailInput.value || "").trim();
@@ -464,14 +392,28 @@ function initChat() {
         return;
       }
 
-      // Caso utente normale
-      const user = getUserByEmailAndPassword(email, password);
-      if (!user) {
-        alert("Credenziali non valide");
-        return;
+      // Caso utente normale (DB esterno)
+      try {
+        const res = await fetch(`${BASE_URL}/auth/login`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, password }),
+        });
+
+        if (!res.ok) {
+          const errText = await res.text();
+          console.error("Errore login:", errText);
+          alert("Credenziali non valide");
+          return;
+        }
+
+        const user = await res.json(); // { id, name, email, ... }
+        setCurrentUserId(user.id);
+        showAppForUser(user.id, user.name);
+      } catch (err) {
+        console.error("Errore fetch /auth/login", err);
+        alert("Errore di rete durante il login.");
       }
-      setCurrentUserId(user.id);
-      showAppForUserId(user.id);
     });
 
     loginPasswordInput.addEventListener("keydown", (e) => {
@@ -482,7 +424,7 @@ function initChat() {
     });
   }
 
-  // (qui continua la logica chat / history / voce, se l'avevi già)
+  // TODO: qui puoi lasciare invariata la logica chat / history / voce che avevi già
 }
 
 // --- Overlay login admin (apertura e submit) ---
