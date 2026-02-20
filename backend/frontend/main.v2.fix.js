@@ -357,15 +357,23 @@ function initChat() {
     tabRegister.addEventListener("click", showRegisterTab);
   }
 
-  // VERSIONE DI TEST: non nasconde la login e non mostra l'app
+  // --- QUI LA FUNZIONE MODIFICATA ---
   function showAppForUserId(id) {
     const user = getUserById(id);
     const name = user ? user.name : "Studente";
 
-    // if (loginPanel) loginPanel.style.display = "none";
-    // if (appPanel) appPanel.style.display = "block";
+    console.log("showAppForUserId", { id, user });
 
-    if (statusLabel) statusLabel.textContent = `Online • Ciao, ${name}!`;
+    if (loginPanel) {
+      loginPanel.style.display = "none";
+    }
+    if (appPanel) {
+      appPanel.style.display = "block";
+    }
+
+    if (statusLabel) {
+      statusLabel.textContent = `Online • Ciao, ${name}!`;
+    }
 
     if (!avatarInitialized) {
       initAvatar3D();
