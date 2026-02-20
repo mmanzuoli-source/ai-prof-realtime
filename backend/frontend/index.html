@@ -327,6 +327,7 @@
     color: #9ca3af;
   }
 
+  /* Overlay login UTENTE (già esistente) */
   #login-panel {
     position: fixed;
     inset: 0;
@@ -390,35 +391,140 @@
     color: #93c5fd;
   }
 
-/* DESKTOP/TABLET: due colonne */
-@media (min-width: 900px) {
-  body {
-    padding: 24px;
+  /* Overlay LOGIN ADMIN */
+  #admin-login-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.9);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 100; /* sopra login utente */
   }
 
-  .app-shell {
-    flex-direction: row;
-    gap: 24px;
+  .admin-login-box {
+    background: #020617;
+    border-radius: 16px;
+    padding: 24px 28px;
+    max-width: 360px;
+    width: 100%;
+    color: #e5e7eb;
+    box-shadow: 0 20px 40px rgba(15, 23, 42, 0.7);
+    border: 1px solid #1f2937;
   }
 
-  .left-pane {
-    flex: 0 0 40%;
+  .admin-login-box h2 {
+    margin-top: 0;
+    margin-bottom: 8px;
+    font-size: 20px;
   }
 
-  .right-pane {
-    flex: 1 1 60%;
-    min-height: 600px;   /* <<< AGGIUNGI QUESTA RIGA */
+  .admin-login-box p {
+    font-size: 13px;
+    color: #9ca3af;
+    margin-bottom: 16px;
   }
 
-  #avatar-3d {
-    height: 480px;
+  .admin-login-box input {
+    width: 100%;
+    padding: 10px 12px;
+    border-radius: 999px;
+    border: 1px solid #1f2937;
+    background: #020617;
+    color: #e5e7eb;
+    font-size: 14px;
+    margin-bottom: 10px;
   }
-}
+
+  .admin-login-box button {
+    width: 100%;
+    border-radius: 999px;
+    border: none;
+    padding: 10px 12px;
+    font-size: 14px;
+    cursor: pointer;
+    font-weight: 500;
+    background: #2563eb;
+    color: #f9fafb;
+  }
+
+  .admin-login-error {
+    color: #f97373;
+    margin-top: 8px;
+    font-size: 12px;
+  }
+
+  /* DESKTOP/TABLET: due colonne */
+  @media (min-width: 900px) {
+    body {
+      padding: 24px;
+    }
+
+    .app-shell {
+      flex-direction: row;
+      gap: 24px;
+    }
+
+    .left-pane {
+      flex: 0 0 40%;
+    }
+
+    .right-pane {
+      flex: 1 1 60%;
+      min-height: 600px;
+    }
+
+    #avatar-3d {
+      height: 480px;
+    }
+  }
 </style>
   </head>
 
   <body>
-    <!-- LOGIN OVERLAY -->
+    <!-- LOGIN ADMIN OVERLAY -->
+    <div id="admin-login-overlay">
+      <div class="admin-login-box">
+        <h2>Login amministratore</h2>
+        <p>Inserisci le credenziali admin per gestire l'app.</p>
+        <label
+          for="admin-username"
+          style="font-size: 13px; color: #9ca3af; margin-bottom: 4px; display: block;"
+        >
+          Username
+        </label>
+        <input
+          id="admin-username"
+          type="text"
+          autocomplete="username"
+          value="Admin"
+        />
+
+        <label
+          for="admin-password"
+          style="font-size: 13px; color: #9ca3af; margin-bottom: 4px; display: block;"
+        >
+          Password
+        </label>
+        <input
+          id="admin-password"
+          type="password"
+          autocomplete="current-password"
+        />
+
+        <button id="admin-login-btn" type="button">
+          Entra come admin
+        </button>
+
+        <p
+          id="admin-login-error"
+          class="admin-login-error"
+          style="display:none;"
+        ></p>
+      </div>
+    </div>
+
+    <!-- LOGIN OVERLAY UTENTE -->
     <div id="login-panel">
       <div class="login-box">
         <h2>Accedi al tuo Tutor</h2>
