@@ -25,9 +25,9 @@ export function initAvatar3D() {
 
   scene = new THREE.Scene();
 
-  // CAMERA PIÙ BASSA E LEGGERMENTE PIÙ LONTANA
+  // Inquadratura centrata su busto + testa
   camera = new THREE.PerspectiveCamera(40, width / height, 0.1, 100);
-  camera.position.set(0, 1.4, 1.4);  // prima 0, 2.6, 1.0
+  camera.position.set(0, 1.5, 1.3);
 
   const ambient = new THREE.AmbientLight(0xffffff, 0.7);
   scene.add(ambient);
@@ -67,12 +67,12 @@ export function initAvatar3D() {
       box.getCenter(center);
 
       const maxSize = Math.max(size.x, size.y, size.z) || 1;
-      const scale = 0.9 / maxSize;          // leggermente più grande
+      const scale = 0.85 / maxSize;
       model.scale.set(scale, scale, scale);
 
-      // CENTRA IL MODELLO E POI ALZALO
+      // centra il modello e alza leggermente (testa verso la riga rossa)
       model.position.sub(center.multiplyScalar(scale));
-      model.position.y += 0.2;              // prima 0.3
+      model.position.y += 0.35;
 
       scene.add(model);
 
@@ -136,9 +136,8 @@ function animate() {
 
       modelRoot.rotation.y = Math.sin(t * 2.0) * rotAmp;
       modelRoot.rotation.x = Math.sin(t * 1.7) * rotAmp * 0.6;
-
-      // NIENTE OFFSET FISSO (non 0.5 + ...), solo una piccola oscillazione
-      modelRoot.position.y = Math.sin(t * 3.0) * posAmp * 0.1;
+      // piccola oscillazione intorno alla base
+      modelRoot.position.y = 0.35 + Math.sin(t * 3.0) * posAmp * 0.05;
     }
   }
 
