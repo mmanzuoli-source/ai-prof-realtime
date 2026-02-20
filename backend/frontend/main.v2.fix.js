@@ -50,17 +50,36 @@ function initAdminLogin() {
   const passwordInput = document.getElementById("admin-password");
   const loginBtn = document.getElementById("admin-login-btn");
   const errorEl = document.getElementById("admin-login-error");
+  const openAdminBtn = document.getElementById("open-admin-login-btn");
 
   if (!overlay || !usernameInput || !passwordInput || !loginBtn) {
     console.warn("Elementi login admin non trovati");
     return;
   }
 
-  // se già loggato, nascondo overlay e parto
+  // se già loggato, popup rimane chiuso
   if (isAdminLoggedIn()) {
     overlay.style.display = "none";
-    return;
   }
+
+  // apertura popup da pulsante nella login utente
+  if (openAdminBtn) {
+    openAdminBtn.addEventListener("click", () => {
+      if (errorEl) {
+        errorEl.style.display = "none";
+        errorEl.textContent = "";
+      }
+      overlay.style.display = "flex";
+      usernameInput.focus();
+    });
+  }
+
+  // chiusura cliccando sullo sfondo scuro
+  overlay.addEventListener("click", (e) => {
+    if (e.target === overlay) {
+      overlay.style.display = "none";
+    }
+  });
 
   const doLogin = async () => {
     if (errorEl) {
