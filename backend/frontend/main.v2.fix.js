@@ -60,6 +60,8 @@ function initAdminLogin() {
   // se già loggato, popup rimane chiuso
   if (isAdminLoggedIn()) {
     overlay.style.display = "none";
+  } else {
+    overlay.style.display = "none"; // assicura che parta nascosto
   }
 
   // apertura popup da pulsante nella login utente
@@ -70,8 +72,10 @@ function initAdminLogin() {
         errorEl.textContent = "";
       }
       overlay.style.display = "flex";
-      usernameInput.focus();
+      if (usernameInput) usernameInput.focus();
     });
+  } else {
+    console.warn("open-admin-login-btn non trovato nel DOM");
   }
 
   // chiusura cliccando sullo sfondo scuro
