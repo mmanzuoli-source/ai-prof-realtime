@@ -1,7 +1,8 @@
 import os
 import json
 import sqlite3
-from datetime import datetime
+from datetime import datetime, timedelta
+from typing import Optional
 
 import httpx
 from dotenv import load_dotenv
@@ -13,19 +14,22 @@ from fastapi import (
     HTTPException,
     Depends,
     Header,
+    status,
 )
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import StreamingResponse, RedirectResponse
+from fastapi.security import OAuth2PasswordRequestForm, OAuth2PasswordBearer
 from pydantic import BaseModel
 from passlib.context import CryptContext
 from openai import OpenAI
+from jose import JWTError, jwt  # JWT
 
 load_dotenv()
 
 PERPLEXITY_API_KEY = os.getenv("PERPLEXITY_API_KEY")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-ADMIN_SECRET = os.getenv("ADMIN_SECRET", "changeme-admin-secret")
+ADMIN_SECRET = os.getenv("ADMIN_SECRET", "changeme-admin-secret")  # rimane per compatibilità se ti serve ancora
 
 print("DEBUG OPENAI_API_KEY prefix:", (OPENAI_API_KEY or "")[:8])
 
@@ -74,12 +78,10 @@ else:
 DB_PATH = os.path.join(BASE_DIR, "users.db")
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-
 def get_db():
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
     return conn
-
 
 def init_db():
     conn = get_db()
@@ -99,28 +101,22 @@ def init_db():
     conn.commit()
     conn.close()
 
-
 init_db()
-
 
 def hash_password(password: str) -> str:
     return pwd_context.hash(password)
 
-
 def verify_password(password: str, password_hash: str) -> bool:
     return pwd_context.verify(password, password_hash)
-
 
 class RegisterRequest(BaseModel):
     name: str
     email: str
     password: str
 
-
 class LoginRequest(BaseModel):
     email: str
     password: str
-
 
 class UserPublic(BaseModel):
     id: int
@@ -129,7 +125,6 @@ class UserPublic(BaseModel):
     is_admin: bool
     created_at: str
     last_login: str | None = None
-
 
 @app.post("/api/register", response_model=UserPublic)
 async def register_user(req: RegisterRequest):
@@ -166,7 +161,6 @@ async def register_user(req: RegisterRequest):
         last_login=row["last_login"],
     )
 
-
 @app.post("/api/login", response_model=UserPublic)
 async def login_user(req: LoginRequest):
     conn = get_db()
@@ -195,20 +189,106 @@ async def login_user(req: LoginRequest):
         last_login=row["last_login"],
     )
 
+# =========================
+#   ADMIN LOGIN via JWT
+# =========================
 
-async def require_admin(
+# Config JWT
+SECRET_KEY = os.getenv("ADMIN_JWT_SECRET", "CAMBIA_QUESTA_CHIAVE_SUPER_SEGRETA")
+ALGORITHM = "HS256"
+ACCESS_TOKEN_EXPIRE_MINUTES = 60  # durata token admin
+
+class Token(BaseModel):
+    access_token: str
+    token_type: str
+
+class TokenData(BaseModel):
+    username: Optional[str] = None
+
+class AdminUser(BaseModel):
+    username: str
+    disabled: Optional[bool] = None
+
+# Admin hardcoded come richiesto
+ADMIN_USERNAME = "Admin"
+ADMIN_PASSWORD = "Firenze.1926!"
+
+def get_admin_user(username: str) -> Optional[AdminUser]:
+    if username == ADMIN_USERNAME:
+        return AdminUser(username=ADMIN_USERNAME, disabled=False)
+    return None
+
+def authenticate_admin(username: str, password: str) -> Optional[AdminUser]:
+    user = get_admin_user(username)
+    if not user:
+        return None
+    # confronto semplice, niente hash (solo per questo admin)
+    if password != ADMIN_PASSWORD:
+        return None
+    return user
+
+def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
+    to_encode = data.copy()
+    expire = datetime.utcnow() + (expires_delta or timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES))
+    to_encode.update({"exp": expire})
+    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    return encoded_jwt
+
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/admin/login")
+
+@app.post("/auth/admin/login", response_model=Token)
+async def admin_login(form_data: OAuth2PasswordRequestForm = Depends()):
+    """
+    Login admin:
+    - username: Admin
+    - password: Firenze.1926!
+    Restituisce un JWT Bearer.
+    """
+    user = authenticate_admin(form_data.username, form_data.password)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Credenziali non valide",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    access_token = create_access_token(
+        data={"sub": user.username},
+        expires_delta=access_token_expires,
+    )
+    return {"access_token": access_token, "token_type": "bearer"}
+
+async def get_current_admin(token: str = Depends(oauth2_scheme)) -> AdminUser:
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Token non valido o scaduto",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        username: str = payload.get("sub")
+        if username is None:
+            raise credentials_exception
+        token_data = TokenData(username=username)
+    except JWTError:
+        raise credentials_exception
+
+    user = get_admin_user(username=token_data.username)
+    if user is None or user.username != ADMIN_USERNAME:
+        raise credentials_exception
+
+    return user
+
+# Vecchio require_admin via header X-Admin-Secret lo lasciamo se ti serve ancora altrove
+async def require_admin_header(
     x_admin_secret: str = Header(..., alias="X-Admin-Secret"),
 ):
     if x_admin_secret != ADMIN_SECRET:
         raise HTTPException(status_code=403, detail="Non autorizzato")
 
-
-@app.get(
-    "/admin/users",
-    response_model=list[UserPublic],
-    dependencies=[Depends(require_admin)],
-)
-async def list_users():
+# Endpoint admin protetti ora via JWT
+@app.get("/admin/users", response_model=list[UserPublic])
+async def list_users(current_admin: AdminUser = Depends(get_current_admin)):
     conn = get_db()
     cur = conn.cursor()
     cur.execute("SELECT * FROM users ORDER BY created_at DESC")
@@ -226,17 +306,11 @@ async def list_users():
         for r in rows
     ]
 
-
 class UpdateUserRequest(BaseModel):
     is_admin: bool | None = None
 
-
-@app.patch(
-    "/admin/users/{user_id}",
-    response_model=UserPublic,
-    dependencies=[Depends(require_admin)],
-)
-async def update_user(user_id: int, body: UpdateUserRequest):
+@app.patch("/admin/users/{user_id}", response_model=UserPublic)
+async def update_user(user_id: int, body: UpdateUserRequest, current_admin: AdminUser = Depends(get_current_admin)):
     conn = get_db()
     cur = conn.cursor()
     cur.execute("SELECT * FROM users WHERE id = ?", (user_id,))
@@ -264,6 +338,11 @@ async def update_user(user_id: int, body: UpdateUserRequest):
         last_login=row["last_login"],
     )
 
+# Esempio endpoint admin di test
+@app.get("/admin/ping")
+async def admin_ping(current_admin: AdminUser = Depends(get_current_admin)):
+    return {"status": "ok", "admin": current_admin.username}
+
 # =====================================================
 #                  PROF / PERPLEXITY
 # =====================================================
@@ -273,12 +352,10 @@ class TutorRequest(BaseModel):
     points: int = 0
     level: int = 1
 
-
 class TutorResponse(BaseModel):
     tipo: str
     testo: str
     score_delta: int = 0
-
 
 SYSTEM_PROMPT = """
 Sei un professore privato paziente per un ragazzo di 11 anni (prima media).
@@ -312,7 +389,6 @@ Devi SEMPRE rispondere in JSON valido con i campi:
 
 Non aggiungere testo fuori dal JSON.
 """
-
 
 async def call_perplexity(message: str, points: int, level: int) -> TutorResponse:
     if not PERPLEXITY_API_KEY:
@@ -380,7 +456,6 @@ async def call_perplexity(message: str, points: int, level: int) -> TutorRespons
 
     return TutorResponse(tipo=tipo, testo=testo, score_delta=score_delta)
 
-
 @app.post("/tutor", response_model=TutorResponse)
 async def tutor_endpoint(req: TutorRequest):
     return await call_perplexity(req.message, req.points, req.level)
@@ -426,15 +501,15 @@ async def tts(text: str = Query(..., min_length=1)):
 
 @app.websocket("/ws/voice")
 async def ws_voice(websocket: WebSocket):
-    await websocket.accept()
-    try:
-        await websocket.receive_bytes()
-        risposta = {
-            "testo": "Ho ricevuto la tua voce. Per ora sto solo testando il canale audio.",
-            "final": True,
-        }
-        await websocket.send_text(json.dumps(risposta))
-    except WebSocketDisconnect:
-        pass
-    finally:
-        await websocket.close()
+  await websocket.accept()
+  try:
+      await websocket.receive_bytes()
+      risposta = {
+          "testo": "Ho ricevuto la tua voce. Per ora sto solo testando il canale audio.",
+          "final": True,
+      }
+      await websocket.send_text(json.dumps(risposta))
+  except WebSocketDisconnect:
+      pass
+  finally:
+      await websocket.close()
