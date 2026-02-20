@@ -25,8 +25,9 @@ export function initAvatar3D() {
 
   scene = new THREE.Scene();
 
+  // CAMERA PIÙ BASSA E LEGGERMENTE PIÙ LONTANA
   camera = new THREE.PerspectiveCamera(40, width / height, 0.1, 100);
-  camera.position.set(0, 2.6, 1.0);
+  camera.position.set(0, 1.4, 1.4);  // prima 0, 2.6, 1.0
 
   const ambient = new THREE.AmbientLight(0xffffff, 0.7);
   scene.add(ambient);
@@ -66,11 +67,12 @@ export function initAvatar3D() {
       box.getCenter(center);
 
       const maxSize = Math.max(size.x, size.y, size.z) || 1;
-      const scale = 0.8 / maxSize;
+      const scale = 0.9 / maxSize;          // leggermente più grande
       model.scale.set(scale, scale, scale);
 
+      // CENTRA IL MODELLO E POI ALZALO
       model.position.sub(center.multiplyScalar(scale));
-      model.position.y += 0.3;
+      model.position.y += 0.6;              // prima 0.3
 
       scene.add(model);
 
@@ -120,26 +122,23 @@ function animate() {
   const t = clock.elapsedTime;
 
   const talk = THREE.MathUtils.clamp(currentTalkingIntensity, 0, 1);
-  const talking = talk >= 0.05; // soglia di partenza movimento extra
+  const talking = talk >= 0.05;
 
-  // 1) La clip GLB gira sempre: posa naturale, più lenta in idle
   if (mixer && baseAction) {
     const baseSpeed = talking ? (0.6 + talk * 1.4) : 0.4;
     mixer.update(delta * baseSpeed);
   }
 
-  // 2) Movimento corpo aggiuntivo solo quando parla
   if (modelRoot) {
-    if (!talking) {
-      // niente oscillazioni extra: resta nella posa data dall'animazione
-      // non tocchiamo rotation / position per non forzare T-pose
-    } else {
+    if (talking) {
       const rotAmp = 0.08 * talk;
       const posAmp = 0.03 * talk;
 
       modelRoot.rotation.y = Math.sin(t * 2.0) * rotAmp;
       modelRoot.rotation.x = Math.sin(t * 1.7) * rotAmp * 0.6;
-      modelRoot.position.y = 0.5 + Math.sin(t * 3.0) * posAmp * 0.1;
+
+      // NIENTE OFFSET FISSO (non 0.5 + ...), solo una piccola oscillazione
+      modelRoot.position.y = Math.sin(t * 3.0) * posAmp * 0.1;
     }
   }
 
