@@ -330,19 +330,19 @@
         color: #9ca3af;
       }
 
-      /* Overlay login UTENTE */
+      /* Overlay login UTENTE: forzato sopra tutto */
       #login-panel {
-        position: fixed;
-        inset: 0;
+        position: fixed !important;
+        inset: 0 !important;
         background: radial-gradient(
           circle at top,
           rgba(15, 23, 42, 0.98),
           #020617
         );
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        z-index: 50;
+        display: flex !important;
+        justify-content: center !important;
+        align-items: center !important;
+        z-index: 9999 !important;
       }
 
       .login-box {
@@ -407,7 +407,7 @@
         display: none;
         align-items: center;
         justify-content: center;
-        z-index: 100;
+        z-index: 10000;
       }
 
       .admin-login-box {
@@ -462,9 +462,9 @@
         font-size: 12px;
       }
 
-      /* App nascosta finché c'è la login */
+      /* App nascosta finché c'è la login (forzato) */
       #app-panel {
-        display: none;
+        display: none !important;
       }
 
       /* DESKTOP/TABLET: due colonne */
