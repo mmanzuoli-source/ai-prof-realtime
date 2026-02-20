@@ -4,21 +4,11 @@
     <meta charset="UTF-8" />
     <title>AI Prof Realtime</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-
-    <!-- Favicon -->
     <link rel="icon" type="image/png" href="favicon.png" />
 
     <style>
-      * {
-        box-sizing: border-box;
-        margin: 0;
-        padding: 0;
-      }
-
-      html,
-      body {
-        height: 100%;
-      }
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+      html, body { height: 100%; }
 
       body {
         font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text",
@@ -29,7 +19,6 @@
         padding: 16px;
       }
 
-      /* MOBILE-FIRST: colonna */
       .app-shell {
         display: flex;
         flex-direction: column;
@@ -129,23 +118,16 @@
         scrollbar-color: #374151 #020617;
       }
 
-      #messages::-webkit-scrollbar {
-        width: 8px;
-      }
-
+      #messages::-webkit-scrollbar { width: 8px; }
       #messages::-webkit-scrollbar-track {
         background: #020617;
         border-radius: 8px;
       }
-
       #messages::-webkit-scrollbar-thumb {
         background: #374151;
         border-radius: 8px;
       }
-
-      #messages::-webkit-scrollbar-thumb:hover {
-        background: #4b5563;
-      }
+      #messages::-webkit-scrollbar-thumb:hover { background: #4b5563; }
 
       .msg {
         padding: 8px 10px;
@@ -188,9 +170,7 @@
         font-size: 14px;
       }
 
-      #user-input::placeholder {
-        color: #6b7280;
-      }
+      #user-input::placeholder { color: #6b7280; }
 
       .input-buttons {
         display: flex;
@@ -266,13 +246,8 @@
         display: none;
       }
 
-      #history-summary-text {
-        margin-bottom: 4px;
-      }
-
-      #history-content {
-        margin-bottom: 8px;
-      }
+      #history-summary-text { margin-bottom: 4px; }
+      #history-content { margin-bottom: 8px; }
 
       #clear-history-btn {
         border-radius: 999px;
@@ -333,88 +308,12 @@
         color: #9ca3af;
       }
 
-      /* Overlay login UTENTE: forzato sopra tutto */
+      /* LOGIN UTENTE NASCOSTO COMPLETAMENTE */
       #login-panel {
-        position: fixed !important;
-        inset: 0 !important;
-        background: radial-gradient(
-          circle at top,
-          rgba(15, 23, 42, 0.98),
-          #020617
-        );
-        display: flex !important;
-        justify-content: center !important;
-        align-items: center !important;
-        z-index: 9999 !important;
+        display: none !important;
       }
 
-      .login-box {
-        width: 100%;
-        max-width: 360px;
-        background: rgba(15, 23, 42, 0.95);
-        border-radius: 16px;
-        border: 1px solid rgba(55, 65, 81, 0.9);
-        padding: 24px 20px 20px;
-        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
-        margin: 0 16px;
-      }
-
-      /* Logo sopra la finestra di login */
-      .login-logo {
-        display: flex;
-        justify-content: center;
-        margin-bottom: 12px;
-      }
-
-      .login-logo img {
-        max-width: 120px;
-        height: auto;
-      }
-
-      .login-box h2 {
-        font-size: 20px;
-        margin-bottom: 8px;
-      }
-
-      .login-box p {
-        font-size: 13px;
-        color: #9ca3af;
-        margin-bottom: 16px;
-      }
-
-      .login-box input {
-        width: 100%;
-        padding: 10px 12px;
-        border-radius: 999px;
-        border: 1px solid #1f2937;
-        background: #020617;
-        color: #e5e7eb;
-        font-size: 14px;
-        margin-bottom: 12px;
-      }
-
-      .login-box button {
-        width: 100%;
-        border-radius: 999px;
-        border: none;
-        padding: 10px 12px;
-        font-size: 14px;
-        cursor: pointer;
-        font-weight: 500;
-      }
-
-      .login-subtext {
-        font-size: 12px;
-        color: #9ca3af;
-        text-align: center;
-        margin-top: 4px;
-      }
-
-      .login-subtext span {
-        color: #93c5fd;
-      }
-
-      /* Overlay LOGIN ADMIN */
+      /* ADMIN OVERLAY TENUTO MA NASCOSTO DI DEFAULT */
       #admin-login-overlay {
         position: fixed;
         inset: 0;
@@ -477,40 +376,28 @@
         font-size: 12px;
       }
 
-      /* App nascosta finché c'è la login (forzato) */
-      #app-panel {
-        display: none;
-      }
-
       /* DESKTOP/TABLET: due colonne */
       @media (min-width: 900px) {
-        body {
-          padding: 24px;
-        }
+        body { padding: 24px; }
 
         .app-shell {
           flex-direction: row;
           gap: 24px;
         }
 
-        .left-pane {
-          flex: 0 0 40%;
-        }
-
+        .left-pane { flex: 0 0 40%; }
         .right-pane {
           flex: 1 1 60%;
           min-height: 600px;
         }
 
-        #avatar-3d {
-          height: 480px;
-        }
+        #avatar-3d { height: 480px; }
       }
     </style>
   </head>
 
   <body>
-    <!-- LOGIN ADMIN OVERLAY -->
+    <!-- LOGIN ADMIN OVERLAY (non usato ora) -->
     <div id="admin-login-overlay">
       <div class="admin-login-box">
         <h2>Login amministratore</h2>
@@ -543,302 +430,10 @@
       </div>
     </div>
 
-    <!-- LOGIN OVERLAY UTENTE -->
-    <div id="login-panel">
-      <div class="login-box">
-        <div class="login-logo">
-          <img src="logo-prof.png" alt="AI Prof Realtime" />
-        </div>
+    <!-- LOGIN OVERLAY UTENTE (TENUTO SOLO COME MARKUP, MA NASCOSTO DA CSS) -->
+    <div id="login-panel"></div>
 
-        <h2>Accedi al tuo Tutor</h2>
-        <p>Scegli un profilo salvato oppure creane uno nuovo.</p>
-
-        <!-- Tabs login/registrazione -->
-        <div
-          class="login-tabs"
-          style="
-            display: flex;
-            margin-bottom: 12px;
-            border-radius: 999px;
-            border: 1px solid #1f2937;
-            overflow: hidden;
-          "
-        >
-          <button
-            id="tab-login"
-            class="login-tab active"
-            type="button"
-            style="
-              flex: 1;
-              padding: 8px 0;
-              border: none;
-              background: #111827;
-              color: #e5e7eb;
-              font-size: 13px;
-              cursor: pointer;
-            "
-          >
-            Ho già un account
-          </button>
-          <button
-            id="tab-register"
-            class="login-tab"
-            type="button"
-            style="
-              flex: 1;
-              padding: 8px 0;
-              border: none;
-              background: transparent;
-              color: #9ca3af;
-              font-size: 13px;
-              cursor: pointer;
-            "
-          >
-            Sono nuovo
-          </button>
-        </div>
-
-        <!-- LOGIN UTENTE ESISTENTE -->
-        <div id="login-existing">
-          <label
-            for="login-user-select"
-            class="login-label"
-            style="
-              font-size: 13px;
-              color: #9ca3af;
-              margin-bottom: 4px;
-              display: block;
-            "
-          >
-            Scegli il tuo profilo
-          </label>
-          <select
-            id="login-user-select"
-            style="
-              width: 100%;
-              padding: 10px 12px;
-              border-radius: 999px;
-              border: 1px solid #1f2937;
-              background: #020617;
-              color: #e5e7eb;
-              font-size: 14px;
-              margin-bottom: 12px;
-            "
-          >
-            <option value="">Nessun profilo salvato</option>
-          </select>
-          <button id="login-existing-btn" disabled>Entra</button>
-
-          <!-- Divider -->
-          <div
-            style="
-              margin: 10px 0 6px;
-              font-size: 11px;
-              color: #6b7280;
-              text-align: center;
-            "
-          >
-            oppure accedi con email e password
-          </div>
-
-          <!-- Login via email/password -->
-          <input
-            type="email"
-            id="login-email"
-            placeholder="nome@scuola.it"
-            autocomplete="email"
-            style="margin-bottom: 6px;"
-          />
-          <input
-            type="password"
-            id="login-password"
-            placeholder="Password"
-            autocomplete="current-password"
-            style="margin-bottom: 8px;"
-          />
-          <button
-            id="login-email-btn"
-            type="button"
-            style="margin-bottom: 4px;"
-          >
-            Accedi
-          </button>
-
-          <!-- Link reset password -->
-          <div
-            style="
-              margin-top: 4px;
-              font-size: 12px;
-              color: #9ca3af;
-              text-align: right;
-            "
-          >
-            <button
-              id="forgot-password-link"
-              type="button"
-              style="
-                background: none;
-                border: none;
-                color: #60a5fa;
-                cursor: pointer;
-                padding: 0;
-                font-size: 12px;
-                text-decoration: underline;
-              "
-            >
-              Ho dimenticato la password
-            </button>
-          </div>
-
-          <!-- Mini form reset password (nascosto) -->
-          <div
-            id="forgot-password-panel"
-            style="
-              display: none;
-              margin-top: 10px;
-              padding-top: 8px;
-              border-top: 1px solid #111827;
-            "
-          >
-            <label
-              for="forgot-email"
-              class="login-label"
-              style="
-                font-size: 12px;
-                color: #9ca3af;
-                margin-bottom: 4px;
-                display: block;
-              "
-            >
-              Email del profilo
-            </label>
-            <input
-              type="email"
-              id="forgot-email"
-              placeholder="nome@scuola.it"
-              autocomplete="email"
-              style="margin-bottom: 6px;"
-            />
-
-            <label
-              for="forgot-password"
-              class="login-label"
-              style="
-                font-size: 12px;
-                color: #9ca3af;
-                margin-bottom: 4px;
-                display: block;
-              "
-            >
-              Nuova password
-            </label>
-            <input
-              type="password"
-              id="forgot-password"
-              placeholder="Nuova password"
-              autocomplete="new-password"
-              style="margin-bottom: 6px;"
-            />
-
-            <button
-              id="forgot-password-btn"
-              type="button"
-              style="width: 100%; margin-top: 4px;"
-            >
-              Reimposta password
-            </button>
-          </div>
-        </div>
-
-        <!-- REGISTRAZIONE NUOVO UTENTE -->
-        <div id="login-register" style="display: none;">
-          <label
-            for="register-name"
-            class="login-label"
-            style="
-              font-size: 13px;
-              color: #9ca3af;
-              margin-bottom: 4px;
-              display: block;
-            "
-          >
-            Come ti chiami?
-          </label>
-          <input
-            type="text"
-            id="register-name"
-            placeholder="Il tuo nome"
-            autocomplete="name"
-          />
-
-          <label
-            for="register-email"
-            class="login-label"
-            style="
-              font-size: 13px;
-              color: #9ca3af;
-              margin-bottom: 4px;
-              margin-top: 4px;
-              display: block;
-            "
-          >
-            Email
-          </label>
-          <input
-            type="email"
-            id="register-email"
-            placeholder="nome@scuola.it"
-            autocomplete="email"
-          />
-
-          <label
-            for="register-password"
-            class="login-label"
-            style="
-              font-size: 13px;
-              color: #9ca3af;
-              margin-bottom: 4px;
-              margin-top: 4px;
-              display: block;
-            "
-          >
-            Password
-          </label>
-          <input
-            type="password"
-            id="register-password"
-            placeholder="Scegli una password"
-            autocomplete="new-password"
-          />
-
-          <button id="register-btn">Crea profilo</button>
-        </div>
-
-        <div class="login-subtext">
-          I tuoi punti e la cronologia restano salvati su questo dispositivo.
-        </div>
-
-        <!-- Pulsante accesso admin -->
-        <div style="margin-top: 8px; text-align: center;">
-          <button
-            id="open-admin-login-btn"
-            type="button"
-            style="
-              background: none;
-              border: none;
-              color: #60a5fa;
-              cursor: pointer;
-              font-size: 12px;
-              text-decoration: underline;
-            "
-          >
-            Accesso amministratore
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <!-- APP PRINCIPALE -->
+    <!-- APP PRINCIPALE SEMPRE VISIBILE -->
     <div class="app-shell" id="app-panel">
       <section class="left-pane">
         <div id="avatar-3d"></div>
@@ -950,7 +545,6 @@
 
           <div id="messages"></div>
 
-          <!-- Box anteprima modalità ascolto -->
           <div
             id="listen-preview"
             style="
