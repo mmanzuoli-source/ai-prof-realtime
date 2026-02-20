@@ -373,7 +373,6 @@ function initChat() {
   }
 
   function showAppForAdmin() {
-    // già loggato come admin → manda alla dashboard
     window.location.href = "/app/admin.html";
   }
 
@@ -446,7 +445,7 @@ function initChat() {
       // Caso ADMIN
       if (email.toLowerCase() === "admin") {
         try {
-          await loginAdminWithPassword(password); // chiama backend e salva token
+          await loginAdminWithPassword(password);
           showAppForAdmin();
         } catch (e) {
           console.error(e);
@@ -455,7 +454,7 @@ function initChat() {
         return;
       }
 
-      // Caso utente normale (profilo locale)
+      // Caso utente normale
       const user = getUserByEmailAndPassword(email, password);
       if (!user) {
         alert("Credenziali non valide");
@@ -473,6 +472,59 @@ function initChat() {
     });
   }
 
-  // (da qui in giù resta la tua logica di chat, storia, missioni, microfono, ecc.)
-  // ...
+  // (qui continua la logica chat / history / voce, se l'avevi già)
 }
+
+// --- Overlay login admin (apertura e submit) ---
+document.addEventListener("DOMContentLoaded", () => {
+  const openAdminBtn = document.getElementById("open-admin-login-btn");
+  const adminOverlay = document.getElementById("admin-login-overlay");
+  const adminLoginBtn = document.getElementById("admin-login-btn");
+  const adminPasswordInput = document.getElementById("admin-password");
+  const adminError = document.getElementById("admin-login-error");
+
+  if (openAdminBtn && adminOverlay) {
+    openAdminBtn.addEventListener("click", () => {
+      adminOverlay.style.display = "flex";
+      if (adminPasswordInput) adminPasswordInput.focus();
+    });
+  }
+
+  if (adminOverlay) {
+    adminOverlay.addEventListener("click", (e) => {
+      if (e.target === adminOverlay) {
+        adminOverlay.style.display = "none";
+      }
+    });
+  }
+
+  if (adminLoginBtn && adminPasswordInput) {
+    adminLoginBtn.addEventListener("click", async () => {
+      const pwd = adminPasswordInput.value.trim();
+      if (!pwd) return;
+
+      try {
+        if (adminError) {
+          adminError.style.display = "none";
+          adminError.textContent = "";
+        }
+        await loginAdminWithPassword(pwd);
+        if (adminOverlay) adminOverlay.style.display = "none";
+        window.location.href = "/app/admin.html";
+      } catch (err) {
+        console.error(err);
+        if (adminError) {
+          adminError.textContent = "Credenziali admin non valide.";
+          adminError.style.display = "block";
+        }
+      }
+    });
+
+    adminPasswordInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        adminLoginBtn.click();
+      }
+    });
+  }
+});
