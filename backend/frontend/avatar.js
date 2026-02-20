@@ -26,7 +26,7 @@ export function initAvatar3D() {
   scene = new THREE.Scene();
 
   camera = new THREE.PerspectiveCamera(40, width / height, 0.1, 100);
-  camera.position.set(0, 2.6, 1.0);
+  camera.position.set(0, 1.6, 1.0);
 
   const ambient = new THREE.AmbientLight(0xffffff, 0.7);
   scene.add(ambient);
