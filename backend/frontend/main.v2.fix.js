@@ -1,15 +1,145 @@
-// main.v2.js
+// main.v2.fix.js
 import { initAvatar3D, resizeAvatar, setTalkingIntensity } from "./avatar.js";
 
 let avatarInitialized = false;
 
-// URL backend (locale vs produzione) – non lo usiamo più per le fetch in prod
+// URL backend
 const BASE_URL =
   window.location.hostname === "localhost"
     ? "http://localhost:8000"
     : "https://www.aiprofrealtime.com";
 
+// === AUTH ADMIN (JWT) ===
+const ADMIN_TOKEN_KEY = "ai_prof_admin_token";
+
+function getAdminToken() {
+  return window.localStorage.getItem(ADMIN_TOKEN_KEY) || null;
+}
+
+function setAdminToken(token) {
+  if (token) {
+    window.localStorage.setItem(ADMIN_TOKEN_KEY, token);
+  } else {
+    window.localStorage.removeItem(ADMIN_TOKEN_KEY);
+  }
+}
+
+function isAdminLoggedIn() {
+  return !!getAdminToken();
+}
+
+async function adminFetch(path, options = {}) {
+  const token = getAdminToken();
+  const headers = new Headers(options.headers || {});
+  if (token) {
+    headers.set("Authorization", `Bearer ${token}`);
+  }
+  const url =
+    path.startsWith("http://") ||
+    path.startsWith("https://") ||
+    path.startsWith("/")
+      ? path
+      : `${BASE_URL}${path.startsWith("/") ? path : "/" + path}`;
+
+  return fetch(url, { ...options, headers });
+}
+
+function initAdminLogin() {
+  const overlay = document.getElementById("admin-login-overlay");
+  const usernameInput = document.getElementById("admin-username");
+  const passwordInput = document.getElementById("admin-password");
+  const loginBtn = document.getElementById("admin-login-btn");
+  const errorEl = document.getElementById("admin-login-error");
+
+  if (!overlay || !usernameInput || !passwordInput || !loginBtn) {
+    console.warn("Elementi login admin non trovati");
+    return;
+  }
+
+  // se già loggato, nascondo overlay e parto
+  if (isAdminLoggedIn()) {
+    overlay.style.display = "none";
+    return;
+  }
+
+  const doLogin = async () => {
+    if (errorEl) {
+      errorEl.style.display = "none";
+      errorEl.textContent = "";
+    }
+
+    const username = usernameInput.value.trim();
+    const password = passwordInput.value;
+
+    if (!username || !password) {
+      if (errorEl) {
+        errorEl.textContent = "Inserisci username e password";
+        errorEl.style.display = "block";
+      }
+      return;
+    }
+
+    try {
+      const body = new URLSearchParams();
+      body.append("username", username);
+      body.append("password", password);
+
+      const resp = await fetch(`${BASE_URL}/auth/admin/login`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+        body,
+      });
+
+      if (!resp.ok) {
+        const data = await resp.json().catch(() => ({}));
+        if (errorEl) {
+          errorEl.textContent = data.detail || "Credenziali non valide";
+          errorEl.style.display = "block";
+        }
+        return;
+      }
+
+      const data = await resp.json();
+      if (!data.access_token) {
+        if (errorEl) {
+          errorEl.textContent = "Risposta login non valida";
+          errorEl.style.display = "block";
+        }
+        return;
+      }
+
+      setAdminToken(data.access_token);
+      overlay.style.display = "none";
+      // da qui in poi l'app funziona come prima
+
+    } catch (err) {
+      console.error("Errore login admin:", err);
+      if (errorEl) {
+        errorEl.textContent = "Errore di connessione. Riprova.";
+        errorEl.style.display = "block";
+      }
+    }
+  };
+
+  loginBtn.addEventListener("click", (e) => {
+    e.preventDefault();
+    doLogin();
+  });
+
+  passwordInput.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      doLogin();
+    }
+  });
+}
+
+// === FINE AUTH ADMIN ===
+
 window.addEventListener("load", () => {
+  initAdminLogin();
   initChat();
 });
 
@@ -819,7 +949,6 @@ function initChat() {
     console.log("Streak aggiornata:", newStreak);
 
     try {
-      // Percorso relativo: va su /tutor dello stesso origin
       const res = await fetch(`/tutor`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
