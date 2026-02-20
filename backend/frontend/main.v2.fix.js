@@ -312,19 +312,23 @@ function initChat() {
   }
 
   function showLogin() {
-    if (loginPanel) loginPanel.style.display = "block";
-    if (appPanel) appPanel.style.display = "none";
-    showLoginTab();
+    // per ora non mostriamo il pannello login: entriamo diretti nell'app
+    if (loginPanel) loginPanel.style.display = "none";
+    if (appPanel) appPanel.style.display = "block";
+  }
+
+  // --- AVVIO DIRETTO SENZA LOGIN (temporaneo) ---
+  function autoStartWithoutLogin() {
+    const fakeUserId = "local-user";
+    const fakeName = "Studente";
+    showAppForUser(fakeUserId, fakeName);
   }
 
   // bootstrap iniziale
-  if (isAdminLoggedIn()) {
-    showLogin();
-  } else {
-    showLogin();
-  }
+  showLogin();
+  autoStartWithoutLogin();
 
-  // --- Registrazione utente via backend ---
+  // --- Registrazione utente via backend (ancora disponibile ma non obbligatoria) ---
   if (
     registerBtn &&
     registerNameInput &&
