@@ -3,13 +3,12 @@ import { initAvatar3D, resizeAvatar, setTalkingIntensity } from "./avatar.js";
 
 let avatarInitialized = false;
 
-// URL backend (ti servirà per la chat, non per il login)
 const BASE_URL =
   window.location.hostname === "localhost"
     ? "http://localhost:8000"
     : "https://www.aiprofrealtime.com";
 
-// === AUTH ADMIN (disponibile, ma non usata per entrare nell'app) ===
+// === AUTH ADMIN (solo per overlay admin) ===
 const ADMIN_TOKEN_KEY = "ai_prof_admin_token";
 
 function getAdminToken() {
@@ -22,22 +21,6 @@ function setAdminToken(token) {
   } else {
     window.localStorage.removeItem(ADMIN_TOKEN_KEY);
   }
-}
-
-async function adminFetch(path, options = {}) {
-  const token = getAdminToken();
-  const headers = new Headers(options.headers || {});
-  if (token) {
-    headers.set("Authorization", `Bearer ${token}`);
-  }
-  const url =
-    path.startsWith("http://") ||
-    path.startsWith("https://") ||
-    path.startsWith("/")
-      ? path
-      : `${BASE_URL}${path.startsWith("/") ? path : "/" + path}`;
-
-  return fetch(url, { ...options, headers });
 }
 
 async function loginAdminWithPassword(password) {
@@ -59,17 +42,7 @@ async function loginAdminWithPassword(password) {
   setAdminToken(data.access_token);
 }
 
-// === FINE AUTH ADMIN ===
-
-initChat();
-
-window.addEventListener("resize", () => {
-  if (avatarInitialized) {
-    resizeAvatar();
-  }
-});
-
-// --- Gestione voce maschile TTS ---
+// === TTS ===
 
 function cleanTextForSpeech(text) {
   if (!text) return "";
@@ -134,8 +107,7 @@ async function speakText(text) {
       setTalkingIntensity(0.0);
     };
 
-    utter.onerror = (e) => {
-      console.error("Errore speechSynthesis", e);
+    utter.onerror = () => {
       setTalkingIntensity(0.0);
     };
 
@@ -146,6 +118,16 @@ async function speakText(text) {
   }
 }
 
+// === CHAT ===
+
+initChat();
+
+window.addEventListener("resize", () => {
+  if (avatarInitialized) {
+    resizeAvatar();
+  }
+});
+
 function initChat() {
   let points = 0;
   let level = 1;
@@ -154,31 +136,12 @@ function initChat() {
   if (typeof savedState.points === "number") points = savedState.points;
   if (typeof savedState.level === "number") level = savedState.level;
 
-  const USER_KEY = "tutorUserId"; // non lo usiamo più per gestire login
   const HISTORY_KEY = "tutorHistory";
   const STREAK_KEY = "tutorStreak";
   const MISSIONS_KEY = "tutorMissions";
 
   const loginPanel = document.getElementById("login-panel");
   const appPanel = document.getElementById("app-panel");
-
-  const tabLogin = document.getElementById("tab-login");
-  const tabRegister = document.getElementById("tab-register");
-  const loginExistingPanel = document.getElementById("login-existing");
-  const loginRegisterPanel = document.getElementById("login-register");
-  const loginEmailInput = document.getElementById("login-email");
-  const loginPasswordInput = document.getElementById("login-password");
-  const loginEmailBtn = document.getElementById("login-email-btn");
-
-  const registerNameInput = document.getElementById("register-name");
-  const registerEmailInput = document.getElementById("register-email");
-  const registerPasswordInput = document.getElementById("register-password");
-  const registerBtn = document.getElementById("register-btn");
-  const forgotPasswordLink = document.getElementById("forgot-password-link");
-  const forgotPasswordPanel = document.getElementById("forgot-password-panel");
-  const forgotEmailInput = document.getElementById("forgot-email");
-  const forgotPasswordInput = document.getElementById("forgot-password");
-  const forgotPasswordBtn = document.getElementById("forgot-password-btn");
 
   const scoreLabel = document.getElementById("score-label");
   const levelLabel = document.getElementById("level-label");
@@ -226,52 +189,13 @@ function initChat() {
   if (schoolInput && savedState.school) schoolInput.value = savedState.school;
   if (subjectInput && savedState.subject) subjectInput.value = savedState.subject;
 
-  // --- Tab login / registrazione (UI ancora presente ma non blocca) ---
-
-  function showLoginTab() {
-    if (!tabLogin || !tabRegister || !loginExistingPanel || !loginRegisterPanel)
-      return;
-    tabLogin.classList.add("active");
-    tabRegister.classList.remove("active");
-    tabLogin.style.background = "#111827";
-    tabLogin.style.color = "#e5e7eb";
-    tabRegister.style.background = "transparent";
-    tabRegister.style.color = "#9ca3af";
-    loginExistingPanel.style.display = "block";
-    loginRegisterPanel.style.display = "none";
-  }
-
-  function showRegisterTab() {
-    if (!tabLogin || !tabRegister || !loginExistingPanel || !loginRegisterPanel)
-      return;
-    tabRegister.classList.add("active");
-    tabLogin.classList.remove("active");
-    tabRegister.style.background = "#111827";
-    tabRegister.style.color = "#e5e7eb";
-    tabLogin.style.background = "transparent";
-    tabLogin.style.color = "#9ca3af";
-    loginExistingPanel.style.display = "none";
-    loginRegisterPanel.style.display = "block";
-  }
-
-  if (tabLogin && tabRegister) {
-    tabLogin.addEventListener("click", showLoginTab);
-    tabRegister.addEventListener("click", showRegisterTab);
-  }
-
-  // --- Mostra app (avatar + chat) ---
-  function showAppForUser(id, name) {
-    console.log("showAppForUser", { id, name });
-
-    if (loginPanel) {
-      loginPanel.style.display = "none";
-    }
-    if (appPanel) {
-      appPanel.style.display = "block";
-    }
+  // Mostra subito app (no login)
+  function showApp() {
+    if (loginPanel) loginPanel.style.display = "none";
+    if (appPanel) appPanel.style.display = "block";
 
     if (statusLabel) {
-      statusLabel.textContent = `Online • Ciao, ${name || "Studente"}!`;
+      statusLabel.textContent = "Online • Ciao, Studente!";
     }
 
     if (!avatarInitialized) {
@@ -281,116 +205,233 @@ function initChat() {
     }
   }
 
-  function showAppForAdmin() {
-    window.location.href = "/app/admin.html";
+  showApp();
+
+  // Helpers UI
+
+  function addMessage(text, role) {
+    if (!messagesEl) return;
+    const div = document.createElement("div");
+    div.className = "msg " + (role === "user" ? "user" : "prof");
+    div.textContent = text;
+    messagesEl.appendChild(div);
+    messagesEl.scrollTop = messagesEl.scrollHeight;
   }
 
-  // --- AVVIO DIRETTO SENZA LOGIN ---
-  (function autoStartWithoutLogin() {
-    const fakeUserId = "local-user";
-    const fakeName = "Studente";
-    showAppForUser(fakeUserId, fakeName);
-  })();
+  function updateXP(delta) {
+    points += delta;
+    if (points < 0) points = 0;
+    // livello fittizio: ogni 100 XP
+    level = 1 + Math.floor(points / 100);
+    const levelProgress = (points % 100) / 100;
 
-  // --- Registrazione / login backend (lasciati ma NON necessari per entrare) ---
+    if (scoreLabel) scoreLabel.textContent = `XP: ${points}`;
+    if (levelLabel)
+      levelLabel.textContent = `Livello ${level} • ${
+        level === 1 ? "Novizio" : "Studente"
+      }`;
+    if (xpBar) xpBar.style.width = `${levelProgress * 100}%`;
 
-  // Se vuoi, puoi commentare TUTTO da qui in giù relativo a register/login.
-  if (
-    registerBtn &&
-    registerNameInput &&
-    registerEmailInput &&
-    registerPasswordInput
-  ) {
-    registerBtn.addEventListener("click", async () => {
-      const name = registerNameInput.value.trim();
-      const email = registerEmailInput.value.trim();
-      const password = registerPasswordInput.value.trim();
-      if (!name || !email || !password) return;
-
-      try {
-        const res = await fetch(`${BASE_URL}/api/register`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ name, email, password }),
-        });
-
-        if (!res.ok) {
-          const errText = await res.text();
-          console.error("Errore registrazione:", errText);
-          alert("Registrazione non riuscita.");
-          return;
-        }
-
-        const user = await res.json(); // { id, name, email }
-        setCurrentUserId(user.id);
-        showAppForUser(user.id, user.name);
-        if (inputEl) inputEl.focus();
-      } catch (err) {
-        console.error("Errore fetch /api/register", err);
-        alert("Errore di rete durante la registrazione.");
-      }
-    });
-
-    registerPasswordInput.addEventListener("keydown", (e) => {
-      if (e.key === "Enter") {
-        e.preventDefault();
-        registerBtn.click();
-      }
-    });
+    localStorage.setItem(
+      "tutorState",
+      JSON.stringify({
+        ...(savedState || {}),
+        points,
+        level,
+        school: schoolInput ? schoolInput.value : "",
+        subject: subjectInput ? subjectInput.value : "",
+      })
+    );
   }
 
-  if (loginEmailBtn && loginEmailInput && loginPasswordInput) {
-    loginEmailBtn.addEventListener("click", async () => {
-      const email = (loginEmailInput.value || "").trim();
-      const password = (loginPasswordInput.value || "").trim();
-      if (!email || !password) return;
+  async function sendMessage(text) {
+    const trimmed = (text || "").trim();
+    if (!trimmed || !messagesEl || !inputEl) return;
 
-      if (email.toLowerCase() === "admin") {
-        try {
-          await loginAdminWithPassword(password);
-          showAppForAdmin();
-        } catch (e) {
-          console.error(e);
-          alert("Login Admin non riuscito");
-        }
+    addMessage(trimmed, "user");
+    inputEl.value = "";
+    inputEl.disabled = true;
+    if (sendBtn) sendBtn.disabled = true;
+    if (statusLabel) statusLabel.textContent = "Sto pensando...";
+
+    try {
+      const payload = {
+        message: trimmed,
+        school: schoolInput ? schoolInput.value || "" : "",
+        subject: subjectInput ? subjectInput.value || "" : "",
+      };
+
+      const res = await fetch(`${BASE_URL}/api/chat`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      if (!res.ok) {
+        const textErr = await res.text();
+        console.error("Errore /api/chat:", textErr);
+        addMessage("C'è stato un errore, riprova tra poco.", "prof");
+        if (statusLabel) statusLabel.textContent = "Errore";
         return;
       }
 
-      try {
-        const res = await fetch(`${BASE_URL}/api/login`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email, password }),
-        });
+      const data = await res.json();
+      const reply = data.reply || data.answer || JSON.stringify(data);
+      addMessage(reply, "prof");
+      speakText(reply);
+      updateXP(10);
+      if (statusLabel) statusLabel.textContent = "Online";
+    } catch (err) {
+      console.error("Errore rete /api/chat:", err);
+      addMessage("Problemi di rete, controlla la connessione.", "prof");
+      if (statusLabel) statusLabel.textContent = "Offline";
+    } finally {
+      if (inputEl) inputEl.disabled = false;
+      if (sendBtn) sendBtn.disabled = false;
+      inputEl.focus();
+    }
+  }
 
-        if (!res.ok) {
-          const errText = await res.text();
-          console.error("Errore login:", errText);
-          alert("Credenziali non valide");
-          return;
-        }
+  // Eventi input testo
 
-        const user = await res.json(); // { id, name, email, ... }
-        setCurrentUserId(user.id);
-        showAppForUser(user.id, user.name);
-      } catch (err) {
-        console.error("Errore fetch /api/login", err);
-        alert("Errore di rete durante il login.");
-      }
+  if (sendBtn && inputEl) {
+    sendBtn.addEventListener("click", () => {
+      sendMessage(inputEl.value);
     });
 
-    loginPasswordInput.addEventListener("keydown", (e) => {
-      if (e.key === "Enter") {
+    inputEl.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" && !e.shiftKey) {
         e.preventDefault();
-        loginEmailBtn.click();
+        sendMessage(inputEl.value);
       }
     });
   }
 
-  // (resto logica chat / history / voce)
+  // Microfono / SpeechRecognition (se supportato)
+
+  if (recognition && micBtn && inputEl) {
+    let isRecording = false;
+
+    recognition.onresult = (event) => {
+      const last = event.results[event.results.length - 1];
+      if (last && last.isFinal) {
+        const transcript = last[0].transcript.trim();
+        if (transcript) {
+          inputEl.value = transcript;
+          sendMessage(transcript);
+        }
+      }
+    };
+
+    recognition.onend = () => {
+      isRecording = false;
+      if (micBtn) micBtn.textContent = "🎤";
+      if (statusLabel) statusLabel.textContent = "Online";
+      if (micTimeoutId) {
+        clearTimeout(micTimeoutId);
+        micTimeoutId = null;
+      }
+    };
+
+    micBtn.addEventListener("click", () => {
+      if (!isRecording) {
+        try {
+          recognition.start();
+          isRecording = true;
+          micBtn.textContent = "🛑";
+          if (statusLabel) statusLabel.textContent = "Sto ascoltando...";
+          micTimeoutId = setTimeout(() => {
+            if (isRecording) {
+              recognition.stop();
+            }
+          }, 15000);
+        } catch (e) {
+          console.error("Errore start recognition", e);
+        }
+      } else {
+        recognition.stop();
+      }
+    });
+  } else if (micBtn) {
+    micBtn.disabled = true;
+    micBtn.title = "Microfono non supportato su questo browser";
+  }
+
+  // Modalità ascolto (usa solo TTS sul testo inserito)
+
+  if (listenModeBtn && listenPreview && listenPreviewText && inputEl) {
+    listenModeBtn.addEventListener("click", () => {
+      const text = (inputEl.value || "").trim();
+      if (!text) return;
+
+      listenModeActive = !listenModeActive;
+
+      if (listenModeActive) {
+        listenPreview.style.display = "block";
+        listenPreviewText.textContent = text;
+        speakText(text);
+        listenModeBtn.textContent = "🔁";
+      } else {
+        listenPreview.style.display = "none";
+        listenPreviewText.textContent = "";
+        window.speechSynthesis.cancel();
+        setTalkingIntensity(0);
+        listenModeBtn.textContent = "👂";
+      }
+    });
+  }
+
+  // Controlli riproduzione voce
+
+  if (playVoiceBtn) {
+    playVoiceBtn.addEventListener("click", () => {
+      window.speechSynthesis.resume();
+    });
+  }
+  if (pauseVoiceBtn) {
+    pauseVoiceBtn.addEventListener("click", () => {
+      window.speechSynthesis.pause();
+    });
+  }
+  if (stopVoiceBtn) {
+    stopVoiceBtn.addEventListener("click", () => {
+      window.speechSynthesis.cancel();
+      setTalkingIntensity(0);
+    });
+  }
+
+  // Cronologia (semplificata: TODO se vuoi riattivarla bene)
+
+  if (historyBtn && historyPanel) {
+    historyBtn.addEventListener("click", () => {
+      historyPanel.style.display =
+        historyPanel.style.display === "none" || !historyPanel.style.display
+          ? "block"
+          : "none";
+    });
+  }
+
+  if (clearHistoryBtn && historyContent) {
+    clearHistoryBtn.addEventListener("click", () => {
+      historyContent.innerHTML = "";
+      localStorage.removeItem(HISTORY_KEY);
+    });
+  }
+
+  // Logout = reset stato locale (ma non login vero, visto che non c'è)
+  if (logoutBtn) {
+    logoutBtn.addEventListener("click", () => {
+      localStorage.removeItem(HISTORY_KEY);
+      localStorage.removeItem(STREAK_KEY);
+      localStorage.removeItem(MISSIONS_KEY);
+      localStorage.removeItem("tutorState");
+      window.location.reload();
+    });
+  }
 }
 
-// --- Overlay login admin (apertura e submit) ---
+// Overlay login admin
+
 document.addEventListener("DOMContentLoaded", () => {
   const openAdminBtn = document.getElementById("open-admin-login-btn");
   const adminOverlay = document.getElementById("admin-login-overlay");
